@@ -62,7 +62,9 @@ export function AvailabilityCalendar({ selected, onToggle, onSelectMany }: Props
     new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
 
   const selectWeek = (rowIndex: number) => {
-    const isos = weeks[rowIndex]
+    const row = weeks[rowIndex];
+    if (!row) return;
+    const isos = row
       .filter((d): d is Date => !!d && !isDisabled(d))
       .map(toISO);
     onSelectMany(isos, true);
