@@ -67,6 +67,17 @@ interface Draft {
   special_requirements: string;
 }
 
+interface StepErrors {
+  volunteer_number?: string;
+  full_name?: string;
+  locality?: string;
+  skills?: string;
+  dates?: string;
+  locality_origin?: string;
+  dates_needed_start?: string;
+  dates_needed_end?: string;
+}
+
 const EMPTY_DRAFT: Draft = {
   volunteer_number: "",
   full_name: "",
@@ -98,7 +109,7 @@ function RegisterPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<StepErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [checkingNumber, setCheckingNumber] = useState(false);
@@ -164,7 +175,7 @@ function RegisterPage() {
     setDraft((d) => ({ ...d, [key]: value }));
     setErrors((e) => {
       const next = { ...e };
-      delete next[key as string];
+      delete next[key as keyof StepErrors];
       return next;
     });
   };
@@ -190,7 +201,7 @@ function RegisterPage() {
   }
 
   function validateStep(s: number): boolean {
-    const e: Record<string, string> = {};
+    const e: StepErrors = {};
     if (s === 0) {
       if (!draft.volunteer_number.trim())
         e.volunteer_number = "Ingresá tu número de voluntario";
