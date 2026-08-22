@@ -67,6 +67,17 @@ interface Draft {
   special_requirements: string;
 }
 
+interface StepErrors {
+  volunteer_number?: string;
+  full_name?: string;
+  locality?: string;
+  skills?: string;
+  dates?: string;
+  locality_origin?: string;
+  dates_needed_start?: string;
+  dates_needed_end?: string;
+}
+
 const EMPTY_DRAFT: Draft = {
   volunteer_number: "",
   full_name: "",
