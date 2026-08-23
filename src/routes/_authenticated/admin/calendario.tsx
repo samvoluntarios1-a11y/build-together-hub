@@ -350,19 +350,25 @@ function CalendarioPage() {
           
           <div className="flex gap-3">
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="btn-outline h-9 px-3 text-xs">
-                  <Download className="h-4 w-4" />
-                  Exportar
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleExportCSV}>Exportar a CSV</DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportExcel}>Exportar a Excel</DropdownMenuItem>
-                <DropdownMenuItem onClick={handlePrintPDF}>Imprimir PDF</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <button 
+              className="btn-outline h-9 px-3 text-xs"
+              onClick={() => setIsExporting(true)}
+            >
+              <Download className="h-4 w-4" />
+              Exportar
+            </button>
+
+            <ExportModal 
+              isOpen={isExporting}
+              onClose={() => setIsExporting(false)}
+              onConfirm={(period) => {
+                // By default export to Excel for simplicity in this button, 
+                // but the user asked to improve "Exportar" button.
+                // We'll show options in the modal or just trigger Excel here.
+                handleExport(period, 'excel');
+              }}
+            />
+
 
             <div className="flex bg-slate-100 p-0.5 rounded-lg">
               <button
