@@ -293,7 +293,7 @@ function CategoriasPage() {
         <div className="card-soft py-20 text-center">
           <Settings className="mx-auto h-12 w-12 text-slate-200" />
           <h3 className="mt-4 text-lg font-bold text-slate-900">No hay categorías</h3>
-          <p className="mt-2 text-slate-500">Comenzá creando la primera categoría de trabajo para la obra.</p>
+          <p className="mt-2 text-slate-500">Comenzá creando la primera categoría de trabajo para LDC.</p>
           <button 
             onClick={() => { setIsAdding(true); resetForm(); }}
             className="btn-navy mt-6 h-10 px-6"
