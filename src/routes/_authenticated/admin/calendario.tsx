@@ -287,13 +287,13 @@ function CalendarioPage() {
               {format(currentDate, "MMMM yyyy", { locale: es })}
             </h1>
             <div className="flex gap-1 border border-slate-200 rounded-lg p-0.5">
-              <button onClick={handlePrevMonth} className="p-1.5 hover:bg-slate-50 rounded-md text-slate-500 transition">
+              <button onClick={handlePrev} className="p-1.5 hover:bg-slate-50 rounded-md text-slate-500 transition">
                 <ChevronLeft className="h-4.5 w-4.5" />
               </button>
               <button onClick={handleToday} className="px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-md transition">
                 Hoy
               </button>
-              <button onClick={handleNextMonth} className="p-1.5 hover:bg-slate-50 rounded-md text-slate-500 transition">
+              <button onClick={handleNext} className="p-1.5 hover:bg-slate-50 rounded-md text-slate-500 transition">
                 <ChevronRight className="h-4.5 w-4.5" />
               </button>
             </div>
