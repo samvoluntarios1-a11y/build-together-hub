@@ -210,7 +210,32 @@ function ReportesPage() {
               <PieChart className="h-4 w-4" />
               Ver Tablero
             </button>
+        <div className="card-soft flex flex-col p-6">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-4">
+            <Download className="h-6 w-6" />
           </div>
+          <h3 className="text-lg font-bold text-slate-900">Reporte Personalizado</h3>
+          <p className="mt-2 flex-1 text-sm text-slate-500 leading-relaxed">
+            Genera un reporte de asignaciones detallado eligiendo un rango de fechas específico.
+          </p>
+          <div className="mt-6 flex gap-2">
+            <button 
+              onClick={() => setIsExporting(true)}
+              className="btn-navy h-9 w-full text-xs"
+            >
+              <Calendar className="h-4 w-4" />
+              Seleccionar Rango
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <ExportModal 
+        isOpen={isExporting}
+        onClose={() => setIsExporting(false)}
+        onConfirm={(period) => handleExport(period, 'excel')}
+      />
+
         </div>
       </div>
 
