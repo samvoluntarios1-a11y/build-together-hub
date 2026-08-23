@@ -17,7 +17,21 @@ export function downloadCSV(filename: string, headers: string[], rows: Cell[][])
   downloadBlob(blob, filename);
 }
 
+export interface ExportFilters {
+  periodType: string;
+  fromDate?: string;
+  toDate?: string;
+  categories?: string[];
+  status?: string;
+  level?: string;
+  accommodation?: string;
+  locality?: string;
+  includeAssignedOnly?: boolean;
+  includeAvailableNotAssigned?: boolean;
+}
+
 export interface ExcelSheet {
+
   name: string;
   headers: string[];
   rows: Cell[][];

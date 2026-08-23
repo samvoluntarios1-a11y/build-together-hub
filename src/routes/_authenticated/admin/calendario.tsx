@@ -48,6 +48,8 @@ function CalendarioPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
   const [isAssigning, setIsAssigning] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
   const [filterCategories, setFilterCategories] = useState<string[]>([]);
   const [filterLevel, setFilterLevel] = useState<string>("all");
   const [showAvailability, setShowAvailability] = useState(false);
@@ -196,87 +198,132 @@ function CalendarioPage() {
   };
   const handleToday = () => setCurrentDate(new Date());
 
-  const handleExportCSV = () => {
-    if (!assignments) return;
-    const headers = ["Fecha", "Categoría", "Voluntario", "Nivel", "Localidad", "Estado"];
-    const rows = assignments.map(a => [
-      a.assignment_date,
-      a.work_categories?.name || "",
-      a.profiles?.full_name || "",
-      a.profiles?.volunteer_skills?.find((s: any) => s.category_id === a.category_id)?.skill_level || "",
-      a.profiles?.locality || "",
-      STATUS_LABELS[a.status] || a.status
-    ]);
-    downloadCSV(`asignaciones-${format(currentDate, "yyyy-MM")}.csv`, headers, rows);
-  };
+  const handleExport = async (period: { type: string; from?: string; to?: string }, formatType: 'csv' | 'excel' | 'pdf') => {
+    let start: Date;
+    let end: Date;
 
-  const handleExportExcel = () => {
-    if (!assignments) return;
-    const rows = assignments.map(a => [
-      a.assignment_date,
-      a.work_categories?.name || "",
-      a.profiles?.full_name || "",
-      a.profiles?.volunteer_skills?.find((s: any) => s.category_id === a.category_id)?.skill_level || "",
-      a.profiles?.locality || "",
-      STATUS_LABELS[a.status] || a.status
-    ]);
-    downloadExcel(`asignaciones-${format(currentDate, "yyyy-MM")}.xlsx`, [{
-      name: "Asignaciones",
-      headers: ["Fecha", "Categoría", "Voluntario", "Nivel", "Localidad", "Estado"],
-      rows
-    }]);
-  };
+    if (period.type === "current_week") {
+      start = startOfWeek(new Date(), { weekStartsOn: 1 });
+      end = endOfWeek(new Date(), { weekStartsOn: 1 });
+    } else if (period.type === "current_month") {
+      start = startOfMonth(new Date());
+      end = endOfMonth(new Date());
+    } else {
+      start = parseISO(period.from!);
+      end = parseISO(period.to!);
+    }
 
-  const handlePrintPDF = () => {
-    const title = `Reporte de Asignaciones - ${format(currentDate, "MMMM yyyy", { locale: es })}`;
-    let html = reportHeader(title, viewMode === "month" ? "Vista Mensual" : "Vista Semanal");
-    
-    const sortedDays = [...days].sort((a, b) => a.getTime() - b.getTime());
-    
-    sortedDays.forEach(day => {
-      const dateStr = format(day, "yyyy-MM-dd");
-      const dayAssignments = assignmentsByDay.get(dateStr) || [];
-      if (dayAssignments.length === 0) return;
+    const { data, error } = await supabase
+      .from("calendar_assignments")
+      .select(`
+        *,
+        profiles (
+          full_name,
+          volunteer_number,
+          locality,
+          volunteer_skills (category_id, skill_level, years_experience, description)
+        ),
+        work_categories (id, name, color, icon)
+      `)
+      .gte("assignment_date", format(start, "yyyy-MM-dd"))
+      .lte("assignment_date", format(end, "yyyy-MM-dd"));
 
-      html += `<h2 class="day">${format(day, "EEEE dd 'de' MMMM", { locale: es })}</h2>`;
-      
-      const byCat: Record<string, AssignmentRow[]> = {};
-      dayAssignments.forEach(a => {
-        const catName = a.work_categories?.name || "Sin categoría";
-        if (!byCat[catName]) byCat[catName] = [];
-        byCat[catName].push(a);
-      });
+    if (error) {
+      toast.error("Error al obtener datos para exportar");
+      return;
+    }
 
-      Object.entries(byCat).forEach(([catName, list]) => {
-        html += `<h3 class="cat">${catName}</h3>`;
-        html += `<table>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>N°</th>
-              <th>Nivel</th>
-              <th>Localidad</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${list.map(a => `
-              <tr>
-                <td>${a.profiles?.full_name}</td>
-                <td>${a.profiles?.volunteer_number}</td>
-                <td>${a.profiles?.volunteer_skills?.find((s: any) => s.category_id === a.category_id)?.skill_level || '-'}</td>
-                <td>${a.profiles?.locality}</td>
-                <td>${STATUS_LABELS[a.status]}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>`;
-      });
+    const filteredData = (data as unknown as AssignmentRow[]).filter(a => {
+      if (filterCategories.length > 0 && !filterCategories.includes(a.category_id)) return false;
+      if (filterLevel !== "all") {
+        const skill = a.profiles?.volunteer_skills?.find((s: any) => s.category_id === a.category_id);
+        if (skill?.skill_level !== filterLevel) return false;
+      }
+      return true;
     });
 
-    html += reportFooter();
-    printHtmlReport(title, html);
+    const filename = `reporte-asignaciones-${format(start, "yyyyMMdd")}-${format(end, "yyyyMMdd")}`;
+    const periodStr = `${format(start, "dd/MM/yyyy")} al ${format(end, "dd/MM/yyyy")}`;
+
+    if (formatType === 'csv') {
+      const headers = ["Fecha", "Categoría", "Nombre", "N° Voluntario", "Nivel", "Localidad", "Estado"];
+      const rows = filteredData.map(a => [
+        a.assignment_date,
+        a.work_categories?.name || "",
+        a.profiles?.full_name || "",
+        a.profiles?.volunteer_number || "",
+        a.profiles?.volunteer_skills?.find((s: any) => s.category_id === a.category_id)?.skill_level || "",
+        a.profiles?.locality || "",
+        STATUS_LABELS[a.status] || a.status
+      ]);
+      downloadCSV(`${filename}.csv`, headers, rows);
+    } else if (formatType === 'excel') {
+      const rows = filteredData.map(a => [
+        a.assignment_date,
+        a.work_categories?.name || "",
+        a.profiles?.full_name || "",
+        a.profiles?.volunteer_number || "",
+        a.profiles?.volunteer_skills?.find((s: any) => s.category_id === a.category_id)?.skill_level || "",
+        a.profiles?.locality || "",
+        STATUS_LABELS[a.status] || a.status
+      ]);
+      downloadExcel(`${filename}.xlsx`, [{
+        name: "Asignaciones",
+        headers: ["Fecha", "Categoría", "Nombre", "N° Voluntario", "Nivel", "Localidad", "Estado"],
+        rows
+      }]);
+    } else {
+      let html = reportHeader("Reporte de Asignaciones", `Período: ${periodStr}`);
+      
+      // Group by date, then category
+      const byDate: Record<string, Record<string, AssignmentRow[]>> = {};
+      filteredData.forEach(a => {
+        if (!byDate[a.assignment_date]) byDate[a.assignment_date] = {};
+        const catName = a.work_categories?.name || "Sin categoría";
+        if (!byDate[a.assignment_date][catName]) byDate[a.assignment_date][catName] = [];
+        byDate[a.assignment_date][catName].push(a);
+      });
+
+      const sortedDates = Object.keys(byDate).sort();
+
+      sortedDates.forEach(dateStr => {
+        const date = parseISO(dateStr);
+        html += `<h2 class="day">${format(date, "EEEE dd 'de' MMMM", { locale: es })}</h2>`;
+        
+        Object.entries(byDate[dateStr]).forEach(([catName, list]) => {
+          html += `<h3 class="cat">${catName}</h3>`;
+          html += `<table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>N°</th>
+                <th>Nivel</th>
+                <th>Exp</th>
+                <th>Localidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${list.map(a => {
+                const skill = a.profiles?.volunteer_skills?.find((s: any) => s.category_id === a.category_id);
+                return `
+                <tr>
+                  <td><strong>${a.profiles?.full_name}</strong></td>
+                  <td>${a.profiles?.volunteer_number}</td>
+                  <td>${skill?.skill_level || '-'}</td>
+                  <td>${skill?.years_experience || 0}a</td>
+                  <td>${a.profiles?.locality}</td>
+                </tr>
+              `}).join('')}
+            </tbody>
+          </table>`;
+        });
+      });
+
+      html += reportFooter();
+      printHtmlReport(filename, html);
+    }
   };
+
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col bg-slate-50 md:flex-row overflow-hidden">
