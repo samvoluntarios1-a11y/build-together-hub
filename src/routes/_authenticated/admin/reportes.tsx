@@ -334,8 +334,9 @@ function ReportesPage() {
       <ExportModal 
         isOpen={isExporting}
         onClose={() => setIsExporting(false)}
-        onConfirm={(period) => handleExport(period, 'excel')}
+        onConfirm={(period: { type: string; from?: string; to?: string }) => handleExport(period, 'excel')}
       />
+
 
       <div className="card-soft p-6 bg-slate-50/50 border-dashed border-2">
         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Estado del Sistema</h3>
