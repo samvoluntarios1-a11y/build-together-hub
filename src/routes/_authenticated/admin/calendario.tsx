@@ -98,7 +98,17 @@ function CalendarioPage() {
     }
   });
 
-  // Calendar logic (replaced below)
+  const days = useMemo(() => {
+    if (viewMode === "month") {
+      const start = startOfWeek(monthStart, { weekStartsOn: 1 });
+      const end = endOfWeek(monthEnd, { weekStartsOn: 1 });
+      return eachDayOfInterval({ start, end });
+    } else {
+      const start = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const end = endOfWeek(start, { weekStartsOn: 1 });
+      return eachDayOfInterval({ start, end: addDays(start, 6) });
+    }
+  }, [currentDate, monthStart, monthEnd, viewMode]);
 
   const { data: availabilitySummary } = useQuery({
     queryKey: ["availability-summary", format(currentDate, "yyyy-MM"), viewMode],
