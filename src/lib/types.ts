@@ -51,6 +51,7 @@ export interface VolunteerRow {
   volunteer_skills: SkillEmbed[];
   availability: { available_date: string }[];
   accommodation_requests: AccommodationEmbed[];
+  calendar_assignments?: AssignmentRow[];
 }
 
 export interface AssignmentRow {
