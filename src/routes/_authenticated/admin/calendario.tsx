@@ -332,6 +332,21 @@ function CalendarioPage() {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            <div className="flex bg-slate-100 p-0.5 rounded-lg">
+              <button
+                onClick={() => setViewMode("month")}
+                className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition ${viewMode === "month" ? "bg-white shadow-sm text-primary" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                Mes
+              </button>
+              <button
+                onClick={() => setViewMode("week")}
+                className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition ${viewMode === "week" ? "bg-white shadow-sm text-primary" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                Semana
+              </button>
+            </div>
+
             <button 
               className="btn-navy h-9 px-4 text-xs"
               onClick={() => {
