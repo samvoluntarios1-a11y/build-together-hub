@@ -81,18 +81,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       meta: [
         { charSet: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
-        { title: "Voluntarios Obra — Registro y Gestión" },
+        { title: "Voluntarios LDC" },
         {
           name: "description",
-          content:
-            "Registrate como voluntario de la obra: cargá tus habilidades, tu disponibilidad y tu pedido de alojamiento. Panel de gestión para coordinadores.",
+          content: "Voluntarios LDC — Gestión de voluntarios para la construcción",
         },
-        { name: "author", content: "Voluntarios Obra" },
-        { property: "og:title", content: "Voluntarios Obra" },
+        { name: "author", content: "Voluntarios LDC" },
+        { property: "og:title", content: "Voluntarios LDC" },
         {
           property: "og:description",
-          content:
-            "Sumate como voluntario: registro abierto con habilidades, disponibilidad y alojamiento.",
+          content: "Voluntarios LDC — Gestión de voluntarios para la construcción",
         },
         { property: "og:type", content: "website" },
         { name: "twitter:card", content: "summary_large_image" },
