@@ -455,9 +455,9 @@ function CalendarioPage() {
                         {a.profiles?.full_name.split(' ')[0]} · {a.work_categories?.name}
                       </div>
                     ))}
-                    {dayAssignments.length > 3 && (
+                    {dayAssignments.length > (viewMode === 'month' ? 3 : 15) && (
                       <div className="text-[9px] font-bold text-slate-400 pl-1.5">
-                        +{dayAssignments.length - 3} más
+                        +{dayAssignments.length - (viewMode === 'month' ? 3 : 15)} más
                       </div>
                     )}
                   </div>
