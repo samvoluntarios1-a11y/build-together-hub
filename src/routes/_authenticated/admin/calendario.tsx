@@ -441,7 +441,7 @@ function CalendarioPage() {
                     )}
                   </div>
                   
-                  <div className="flex flex-col gap-1 overflow-hidden mt-1">
+                  <div className={`flex flex-col gap-1 overflow-hidden mt-1 ${viewMode === 'week' ? 'flex-1' : ''}`}>
                     {dayAssignments.slice(0, 3).map(a => (
                       <div 
                         key={a.id}
