@@ -67,6 +67,7 @@ export interface AssignmentRow {
     volunteer_number: string;
     locality: string;
     accommodation_requests?: AccommodationEmbed[];
+    volunteer_skills?: SkillEmbed[];
   } | null;
   work_categories?: { name: string; color: string; icon: string } | null;
 }
