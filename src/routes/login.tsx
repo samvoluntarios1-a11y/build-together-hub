@@ -8,8 +8,8 @@ import { AppLogo } from "@/components/AppLogo";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Acceso coordinadores — Voluntarios LDC" },
-      { name: "description", content: "Ingreso al panel de administración de voluntarios." },
+      { title: "Voluntarios LDC" },
+      { name: "description", content: "Voluntarios LDC — Gestión de voluntarios para la construcción" },
       { name: "robots", content: "noindex" },
     ],
   }),
