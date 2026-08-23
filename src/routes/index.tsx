@@ -76,9 +76,6 @@ function Landing() {
                   Quiero ser voluntario
                   <ArrowRight className="h-5 w-5" />
                 </Link>
-                <span className="text-sm text-primary-foreground/70">
-                  elimina tambien Sin cuenta · Sin contraseña · Desde tu celular
-                </span>
               </div>
             </div>
             <div className="overflow-hidden rounded-3xl shadow-lifted">
