@@ -155,7 +155,13 @@ export const createBulkAssignments = createServerFn({ method: "POST" })
 
         const { error } = await supabaseAdmin
           .from("calendar_assignments")
-          .insert(assignment);
+          .insert({
+            volunteer_id: assignment.volunteer_id,
+            category_id: assignment.category_id,
+            assignment_date: assignment.assignment_date,
+            notes: assignment.notes ?? null,
+            status: assignment.status
+          });
 
         if (error) throw error;
         results.successCount++;
