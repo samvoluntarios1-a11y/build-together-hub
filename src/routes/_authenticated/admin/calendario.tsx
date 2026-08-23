@@ -369,12 +369,10 @@ function CalendarioPage() {
             <ExportModal 
               isOpen={isExporting}
               onClose={() => setIsExporting(false)}
-              onConfirm={(period) => {
-                // By default export to Excel for simplicity in this button, 
-                // but the user asked to improve "Exportar" button.
-                // We'll show options in the modal or just trigger Excel here.
+              onConfirm={(period: { type: string; from?: string; to?: string }) => {
                 handleExport(period, 'excel');
               }}
+
             />
 
 
