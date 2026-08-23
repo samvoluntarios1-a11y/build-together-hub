@@ -10,11 +10,12 @@ import { toast } from "sonner";
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (period: { type: string; from?: string; to?: string }) => void;
+  onConfirm: (period: { type: string; from?: string; to?: string }, format: 'csv' | 'excel' | 'pdf') => void;
 }
 
 export function ExportModal({ isOpen, onClose, onConfirm }: ExportModalProps) {
   const [periodType, setPeriodType] = useState("current_week");
+  const [formatType, setFormatType] = useState<'csv' | 'excel' | 'pdf'>("excel");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
@@ -29,7 +30,7 @@ export function ExportModal({ isOpen, onClose, onConfirm }: ExportModalProps) {
         return;
       }
     }
-    onConfirm({ type: periodType, from: fromDate, to: toDate });
+    onConfirm({ type: periodType, from: fromDate, to: toDate }, formatType);
     onClose();
   };
 
@@ -50,6 +51,20 @@ export function ExportModal({ isOpen, onClose, onConfirm }: ExportModalProps) {
                 <SelectItem value="current_week">Semana actual</SelectItem>
                 <SelectItem value="current_month">Mes actual</SelectItem>
                 <SelectItem value="custom">Rango personalizado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Formato de exportación</Label>
+            <Select value={formatType} onValueChange={(v: any) => setFormatType(v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="excel">Excel (.xlsx)</SelectItem>
+                <SelectItem value="csv">CSV (.csv)</SelectItem>
+                <SelectItem value="pdf">PDF (Imprimible)</SelectItem>
               </SelectContent>
             </Select>
           </div>

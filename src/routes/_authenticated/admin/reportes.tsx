@@ -338,7 +338,7 @@ function ReportesPage() {
       <ExportModal 
         isOpen={isExporting}
         onClose={() => setIsExporting(false)}
-        onConfirm={(period) => handleExport(period, 'pdf')}
+        onConfirm={(period, formatType) => handleExport(period, formatType)}
       />
 
 
