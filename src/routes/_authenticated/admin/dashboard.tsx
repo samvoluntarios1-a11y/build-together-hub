@@ -155,7 +155,18 @@ function AdminDashboard() {
     queryFn: async () => {
       const { count: total } = await supabase.from("profiles").select("*", { count: "exact", head: true });
       const { count: accommodation } = await supabase.from("accommodation_requests").select("*", { count: "exact", head: true }).eq("is_fulfilled", false);
-      const { count: assignments } = await supabase.from("calendar_assignments").select("*", { count: "exact", head: true }).gte("assignment_date", new Date().toISOString().split('T')[0]);
+      
+      // Calculate upcoming assignments (next 30 days)
+      const today = new Date().toISOString().split('T')[0];
+      const nextMonth = new Date();
+      nextMonth.setDate(nextMonth.getDate() + 30);
+      const nextMonthStr = nextMonth.toISOString().split('T')[0];
+      
+      const { count: assignments } = await supabase
+        .from("calendar_assignments")
+        .select("*", { count: "exact", head: true })
+        .gte("assignment_date", today)
+        .lte("assignment_date", nextMonthStr);
       
       return {
         total: total ?? 0,
