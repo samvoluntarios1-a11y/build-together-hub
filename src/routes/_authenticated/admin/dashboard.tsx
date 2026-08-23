@@ -476,10 +476,17 @@ function AdminDashboard() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
+                        <button 
+                          onClick={() => { setSelectedVolunteer(v); setIsModalOpen(true); }}
+                          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-primary transition"
+                          title="Ver Perfil"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
                         <Link 
                           to="/admin/calendario" 
                           search={{ volunteer: v.id } as any}
-                          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-primary transition"
+                          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-success transition"
                           title="Asignar"
                         >
                           <UserPlus className="h-4 w-4" />
