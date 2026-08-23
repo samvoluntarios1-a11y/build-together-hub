@@ -451,10 +451,24 @@ function AdminDashboard() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700">
-                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                        {v.availability?.length || 0} días
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                          {v.availability?.length || 0} días
+                        </span>
+                        {dateFilterMode !== "none" && v.availability && (
+                          <div className="flex flex-wrap gap-1 max-w-[150px]">
+                            {v.availability.slice(0, 3).map((a, idx) => (
+                              <span key={idx} className="text-[9px] bg-success/10 text-success px-1 rounded font-bold">
+                                {format(parseISO(a.available_date), "dd/MM")}
+                              </span>
+                            ))}
+                            {v.availability.length > 3 && (
+                              <span className="text-[9px] text-slate-400">+{v.availability.length - 3}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       {Array.isArray(v.accommodation_requests) && v.accommodation_requests?.[0]?.needs_accommodation ? (
