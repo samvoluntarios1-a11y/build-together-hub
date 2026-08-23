@@ -96,12 +96,7 @@ function CalendarioPage() {
     }
   });
 
-  // Calendar logic
-  const days = useMemo(() => {
-    const start = startOfWeek(monthStart, { weekStartsOn: 1 });
-    const end = endOfWeek(monthEnd, { weekStartsOn: 1 });
-    return eachDayOfInterval({ start, end });
-  }, [monthStart, monthEnd]);
+  // Calendar logic (replaced below)
 
   const { data: availabilitySummary } = useQuery({
     queryKey: ["availability-summary", format(currentDate, "yyyy-MM"), viewMode],
