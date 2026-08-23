@@ -1,17 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle2, Printer, Home, HardHat } from "lucide-react";
 
-interface SuccessSearch {
-  n?: string;
-  nombre?: string;
-  dias?: number;
+export interface SuccessSearch {
+  n: string;
+  nombre: string;
+  dias: number;
 }
 
 export const Route = createFileRoute("/registro-exitoso")({
   validateSearch: (search: Record<string, unknown>): SuccessSearch => ({
-    n: typeof search["n"] === "string" ? search["n"] : undefined,
-    nombre: typeof search["nombre"] === "string" ? search["nombre"] : undefined,
-    dias: typeof search["dias"] === "number" ? search["dias"] : undefined,
+    n: String(search["n"] ?? ""),
+    nombre: String(search["nombre"] ?? ""),
+    dias: Number(search["dias"] ?? 0),
   }),
   head: () => ({
     meta: [
