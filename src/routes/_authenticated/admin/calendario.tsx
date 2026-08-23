@@ -121,14 +121,16 @@ function CalendarioPage() {
 
       // Group by date and category
       const counts: Record<string, Record<string, number>> = {};
-      data?.forEach((row: any) => {
+      (data as any[])?.forEach((row: any) => {
         const date = row.available_date;
         if (!counts[date]) counts[date] = {};
         
         const skills = row.profiles?.volunteer_skills;
         if (Array.isArray(skills)) {
           skills.forEach((s: any) => {
-            counts[date][s.category_id] = (counts[date][s.category_id] || 0) + 1;
+            if (counts[date]) {
+              counts[date][s.category_id] = (counts[date][s.category_id] || 0) + 1;
+            }
           });
         }
       });
