@@ -106,7 +106,7 @@ function ReportesPage() {
       
       if (error) throw error;
 
-      let html = reportHeader("Planilla Diaria de Obra", `Fecha: ${format(new Date(), "PP", { locale: es })}`);
+      let html = reportHeader("Planilla Diaria de Voluntarios", `Fecha: ${format(new Date(), "PP", { locale: es })}`);
       
       html += `
         <h2 class="day">Personal Asignado (${data?.length || 0})</h2>

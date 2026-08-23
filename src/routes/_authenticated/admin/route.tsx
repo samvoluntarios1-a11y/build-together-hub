@@ -45,7 +45,7 @@ function AdminLayout() {
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <HardHat className="h-5 w-5" />
           </span>
-          <span className="font-extrabold tracking-tight text-slate-900">Admin Obra</span>
+          <span className="font-extrabold tracking-tight text-slate-900">Admin Voluntarios</span>
         </div>
         
         <nav className="flex-1 space-y-1 p-4">
@@ -79,7 +79,7 @@ function AdminLayout() {
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <HardHat className="h-5 w-5" />
             </span>
-            <span className="font-extrabold tracking-tight">Admin Obra</span>
+            <span className="font-extrabold tracking-tight">Admin Voluntarios</span>
           </div>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

@@ -453,7 +453,7 @@ function RegisterPage() {
           <section className="card-soft p-6 sm:p-8">
             <h1 className="text-2xl font-extrabold tracking-tight">Tus datos</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Usamos tu número de voluntario para identificarte durante toda la obra.
+              Usamos tu número de voluntario para identificarte durante toda la estadía.
             </p>
             <div className="mt-6 space-y-5">
               <div>
@@ -745,7 +745,7 @@ function RegisterPage() {
           <section className="card-soft p-6 sm:p-8">
             <h1 className="text-2xl font-extrabold tracking-tight">Alojamiento</h1>
             <p className="mt-4 text-lg font-semibold">
-              ¿Necesitás alojamiento durante la obra?
+              ¿Necesitás alojamiento durante los días de voluntariado?
             </p>
             <div className="mt-4 grid grid-cols-2 gap-3">
               {[
@@ -940,7 +940,7 @@ function RegisterPage() {
               />
               <span className="text-sm font-semibold">
                 Confirmo que todos los datos son correctos y quiero registrarme como
-                voluntario de la obra.
+                voluntario.
               </span>
             </label>
           </section>

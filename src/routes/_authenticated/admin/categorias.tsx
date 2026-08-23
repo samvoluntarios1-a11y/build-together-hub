@@ -117,7 +117,7 @@ function CategoriasPage() {
     <div className="space-y-6 p-6 md:p-8">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Configuración de Obra</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Configuración LDC</h1>
           <p className="text-slate-500 text-sm">Administrá los oficios, habilidades y categorías de trabajo.</p>
         </div>
         <button 
@@ -293,7 +293,7 @@ function CategoriasPage() {
         <div className="card-soft py-20 text-center">
           <Settings className="mx-auto h-12 w-12 text-slate-200" />
           <h3 className="mt-4 text-lg font-bold text-slate-900">No hay categorías</h3>
-          <p className="mt-2 text-slate-500">Comenzá creando la primera categoría de trabajo para la obra.</p>
+          <p className="mt-2 text-slate-500">Comenzá creando la primera categoría de trabajo para LDC.</p>
           <button 
             onClick={() => { setIsAdding(true); resetForm(); }}
             className="btn-navy mt-6 h-10 px-6"

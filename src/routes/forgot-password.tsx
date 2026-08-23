@@ -84,7 +84,7 @@ function ForgotPasswordPage() {
                     type="email"
                     required
                     className="input-field"
-                    placeholder="coordinador@obra.org"
+                    placeholder="coordinador@voluntarios.org"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
