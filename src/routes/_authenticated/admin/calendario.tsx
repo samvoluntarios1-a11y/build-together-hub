@@ -57,8 +57,11 @@ function CalendarioPage() {
   const monthEnd = endOfMonth(currentDate);
   
   const { data: assignments, isLoading: loadingAssignments } = useQuery({
-    queryKey: ["assignments", format(currentDate, "yyyy-MM")],
+    queryKey: ["assignments", format(currentDate, "yyyy-MM"), viewMode],
     queryFn: async () => {
+      const start = viewMode === "month" ? startOfWeek(monthStart, { weekStartsOn: 1 }) : startOfWeek(currentDate, { weekStartsOn: 1 });
+      const end = viewMode === "month" ? endOfWeek(monthEnd, { weekStartsOn: 1 }) : endOfWeek(currentDate, { weekStartsOn: 1 });
+
       const { data, error } = await supabase
         .from("calendar_assignments")
         .select(`
@@ -67,12 +70,13 @@ function CalendarioPage() {
             full_name,
             volunteer_number,
             locality,
-            accommodation_requests (needs_accommodation, is_fulfilled)
+            accommodation_requests (needs_accommodation, is_fulfilled),
+            volunteer_skills (category_id, skill_level, years_experience)
           ),
-          work_categories (name, color, icon)
+          work_categories (id, name, color, icon)
         `)
-        .gte("assignment_date", format(startOfWeek(monthStart), "yyyy-MM-dd"))
-        .lte("assignment_date", format(endOfWeek(monthEnd), "yyyy-MM-dd"));
+        .gte("assignment_date", format(start, "yyyy-MM-dd"))
+        .lte("assignment_date", format(end, "yyyy-MM-dd"));
         
       if (error) throw error;
       return data as unknown as AssignmentRow[];
