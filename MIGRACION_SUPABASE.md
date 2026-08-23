@@ -4,9 +4,9 @@ Esta guía ha sido auditada exhaustivamente para coincidir con el código actual
 
 ## 1. Conexión del Proyecto
 
-1.  En Lovable, hacé clic en **"View Backend"**.
+1.  En la configuración de la nube, hacé clic en **"View Backend"**.
 2.  Ingresá tu **Project URL** y **Anon Key** de tu proyecto propio de Supabase.
-3.  Lovable actualizará automáticamente las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`.
+3.  El sistema actualizará automáticamente las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`.
 
 ---
 

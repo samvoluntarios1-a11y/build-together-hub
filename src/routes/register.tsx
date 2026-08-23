@@ -4,7 +4,6 @@ import { SuccessSearch } from "./registro-exitoso";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  HardHat,
   User,
   CalendarDays,
   BedDouble,
@@ -22,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { submitRegistration } from "@/lib/registration.functions";
 import { AvailabilityCalendar } from "@/components/register/AvailabilityCalendar";
 import { CategoryIcon } from "@/lib/icons";
+import { AppLogo } from "@/components/AppLogo";
 import {
   MAX_SKILLS,
   SKILL_LEVEL_LABELS,
@@ -32,18 +32,18 @@ import {
 export const Route = createFileRoute("/register")({
   head: () => ({
     meta: [
-      { title: "Registro de voluntario — Voluntarios LDC" },
+      { title: "Voluntarios LDC" },
       {
         name: "description",
-        content:
-          "Registrate como voluntario: datos personales, habilidades, disponibilidad de fechas y alojamiento.",
+        content: "Voluntarios LDC — Gestión de voluntarios para la construcción",
       },
-      { property: "og:title", content: "Registro de voluntario — Voluntarios LDC" },
+      { property: "og:title", content: "Voluntarios LDC" },
       {
         property: "og:description",
-        content: "Formulario público de registro de voluntarios.",
+        content: "Voluntarios LDC — Gestión de voluntarios para la construcción",
       },
       { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: RegisterPage,
@@ -96,7 +96,7 @@ const EMPTY_DRAFT: Draft = {
 const DRAFT_KEY = "voluntarios-ldc-draft-v1";
 const STEPS = [
   { label: "Datos", icon: User },
-  { label: "Habilidades", icon: Wrench },
+  { label: "Habilidades", icon: AppLogo },
   { label: "Disponibilidad", icon: CalendarDays },
   { label: "Alojamiento", icon: BedDouble },
   { label: "Revisión", icon: ClipboardCheck },
@@ -389,11 +389,8 @@ function RegisterPage() {
     <div className="min-h-screen bg-background">
       <header className="bg-primary text-primary-foreground no-print">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
-          <Link to="/" className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-              <HardHat className="h-5 w-5" />
-            </span>
-            <span className="font-extrabold tracking-tight">Voluntarios LDC</span>
+          <Link to="/">
+            <AppLogo variant="default" iconClassName="h-5 w-5" textClassName="font-extrabold tracking-tight" />
           </Link>
           {lastSaved && (
             <span className="flex items-center gap-1.5 text-xs text-primary-foreground/70">

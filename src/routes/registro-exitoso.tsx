@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, Printer, Home, HardHat } from "lucide-react";
+import { CheckCircle2, Printer, Home } from "lucide-react";
+import { AppLogo } from "@/components/AppLogo";
 
 export interface SuccessSearch {
   n: string;
@@ -15,7 +16,7 @@ export const Route = createFileRoute("/registro-exitoso")({
   }),
   head: () => ({
     meta: [
-      { title: "¡Registro exitoso! — Voluntarios LDC" },
+      { title: "Voluntarios LDC" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -36,9 +37,7 @@ function SuccessPage() {
         {/* Comprobante imprimible */}
         <div className="print-area card-soft p-8">
           <div className="flex items-center gap-3 border-b-2 border-primary pb-4">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-              <HardHat className="h-6 w-6" />
-            </span>
+            <AppLogo variant="default" showText={false} iconClassName="h-6 w-6" />
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Comprobante de registro

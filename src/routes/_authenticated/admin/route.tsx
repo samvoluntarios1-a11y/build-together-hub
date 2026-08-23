@@ -5,13 +5,13 @@ import {
   Settings, 
   FileText, 
   LogOut, 
-  HardHat,
   Menu,
   X
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AppLogo } from "@/components/AppLogo";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
@@ -42,10 +42,7 @@ function AdminLayout() {
       {/* Sidebar Desktop */}
       <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white md:flex">
         <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-6">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <HardHat className="h-5 w-5" />
-          </span>
-          <span className="font-extrabold tracking-tight text-slate-900">Admin Voluntarios</span>
+          <AppLogo variant="dark" iconClassName="h-5 w-5" textClassName="font-extrabold tracking-tight text-slate-900" />
         </div>
         
         <nav className="flex-1 space-y-1 p-4">
@@ -76,10 +73,7 @@ function AdminLayout() {
       <div className="flex flex-1 flex-col">
         <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden">
           <div className="flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <HardHat className="h-5 w-5" />
-            </span>
-            <span className="font-extrabold tracking-tight">Admin Voluntarios</span>
+            <AppLogo variant="dark" iconClassName="h-5 w-5" textClassName="font-extrabold tracking-tight" />
           </div>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

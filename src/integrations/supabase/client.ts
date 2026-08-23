@@ -26,7 +26,7 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
-// On a Lovable preview surface, store the session in a cookie on the shared
+// Almacenar la sesión en una cookie para persistencia en el entorno de previsualización.
 // <projectId> parent so preview surfaces share one login (else localStorage).
 function sharedPreviewStorage() {
   if (typeof window === 'undefined') return undefined;
@@ -87,7 +87,7 @@ function createSupabaseClient() {
       ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
       ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
+    const message = `Faltan variables de entorno de Supabase: ${missing.join(', ')}. Conecte la base de datos en la configuración.`;
     console.error(`[Supabase] ${message}`);
     throw new Error(message);
   }
