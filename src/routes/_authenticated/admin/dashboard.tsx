@@ -621,7 +621,7 @@ function AdminDashboard() {
         volunteer={selectedVolunteer}
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); setSelectedVolunteer(null); }}
-        onDelete={(v) => {
+        onDelete={(v: VolunteerRow) => {
           setIsModalOpen(false);
           setSelectedVolunteer(null);
           setVolunteerToDelete(v);
