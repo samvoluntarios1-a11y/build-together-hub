@@ -160,7 +160,7 @@ function LoginPage() {
                 required
                 autoComplete="email"
                 className="input-field"
-                placeholder="coordinador@obra.org"
+                placeholder="coordinador@voluntarios.org"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
