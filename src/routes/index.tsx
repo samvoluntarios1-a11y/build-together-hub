@@ -5,17 +5,15 @@ import heroImg from "@/assets/hero-voluntarios.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Voluntarios Obra — Sumate como voluntario" },
+      { title: "Voluntarios LDC" },
       {
         name: "description",
-        content:
-          "Registro abierto de voluntarios para la obra: cargá tus habilidades, elegí tus días disponibles y pedí alojamiento si lo necesitás.",
+        content: "Voluntarios LDC — Gestión de voluntarios para la construcción",
       },
-      { property: "og:title", content: "Voluntarios Obra — Sumate como voluntario" },
+      { property: "og:title", content: "Voluntarios LDC" },
       {
         property: "og:description",
-        content:
-          "Registro abierto de voluntarios para la obra: cargá tus habilidades, elegí tus días disponibles y pedí alojamiento.",
+        content: "Voluntarios LDC — Gestión de voluntarios para la construcción",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -38,7 +36,7 @@ const STEPS = [
   {
     icon: CalendarDays,
     title: "Elegí tus días",
-    text: "Marcá en el calendario los días que podés venir durante los 18 meses de obra.",
+    text: "Marcá en el calendario los días que podés venir.",
   },
   {
     icon: BedDouble,
@@ -57,15 +55,9 @@ function Landing() {
               <HardHat className="h-6 w-6" />
             </span>
             <span className="text-lg font-extrabold tracking-tight">
-              Voluntarios Obra
+              Voluntarios LDC
             </span>
           </div>
-          <Link
-            to="/login"
-            className="rounded-xl border border-primary-foreground/30 px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-foreground/10"
-          >
-            Acceso coordinadores
-          </Link>
         </div>
       </header>
 
@@ -73,15 +65,11 @@ function Landing() {
         <section className="bg-primary pb-16 pt-12 text-primary-foreground md:pb-24 md:pt-20">
           <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 md:grid-cols-2">
             <div>
-              <p className="mb-3 inline-block rounded-full bg-accent/15 px-4 py-1 text-sm font-bold text-accent">
-                Registro abierto — 18 meses de obra
-              </p>
               <h1 className="text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">
-                Sumate como voluntario a la obra
+                Haste disponible como voluntario
               </h1>
               <p className="mt-4 max-w-lg text-lg text-primary-foreground/80">
-                Necesitamos manos con ganas. Registrate en 5 minutos, contanos
-                qué sabés hacer y en qué días podés dar una mano.
+                Contanos qué sabés hacer y en qué días podés dar una mano.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <Link to="/register" className="btn-accent no-print text-lg">
@@ -137,7 +125,7 @@ function Landing() {
       </main>
 
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
-        Voluntarios Obra — Gestión de voluntarios para la construcción
+        Voluntarios LDC — Gestión de voluntarios para la construcción
       </footer>
     </div>
   );

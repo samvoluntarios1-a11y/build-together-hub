@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
     meta: [
-      { title: "Recuperar contraseña — Voluntarios Obra" },
+      { title: "Recuperar contraseña — Voluntarios LDC" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -48,7 +48,7 @@ function ForgotPasswordPage() {
               <HardHat className="h-7 w-7" />
             </span>
             <span className="text-2xl font-extrabold tracking-tight">
-              Voluntarios Obra
+              Voluntarios LDC
             </span>
           </Link>
         </div>

@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Acceso coordinadores — Voluntarios Obra" },
+      { title: "Acceso coordinadores — Voluntarios LDC" },
       { name: "description", content: "Ingreso al panel de administración de voluntarios." },
       { name: "robots", content: "noindex" },
     ],
@@ -133,7 +133,7 @@ function LoginPage() {
               <HardHat className="h-7 w-7" />
             </span>
             <span className="text-2xl font-extrabold tracking-tight">
-              Voluntarios Obra
+              Voluntarios LDC
             </span>
           </Link>
           <p className="mt-2 text-sm text-primary-foreground/70">

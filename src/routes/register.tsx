@@ -32,16 +32,16 @@ import {
 export const Route = createFileRoute("/register")({
   head: () => ({
     meta: [
-      { title: "Registro de voluntario — Voluntarios Obra" },
+      { title: "Registro de voluntario — Voluntarios LDC" },
       {
         name: "description",
         content:
-          "Registrate como voluntario de la obra: datos personales, habilidades, disponibilidad de fechas y alojamiento.",
+          "Registrate como voluntario: datos personales, habilidades, disponibilidad de fechas y alojamiento.",
       },
-      { property: "og:title", content: "Registro de voluntario — Voluntarios Obra" },
+      { property: "og:title", content: "Registro de voluntario — Voluntarios LDC" },
       {
         property: "og:description",
-        content: "Formulario público de registro de voluntarios para la obra.",
+        content: "Formulario público de registro de voluntarios.",
       },
       { property: "og:type", content: "website" },
     ],
@@ -93,7 +93,7 @@ const EMPTY_DRAFT: Draft = {
   special_requirements: "",
 };
 
-const DRAFT_KEY = "voluntarios-obra-draft-v1";
+const DRAFT_KEY = "voluntarios-ldc-draft-v1";
 const STEPS = [
   { label: "Datos", icon: User },
   { label: "Habilidades", icon: Wrench },
@@ -292,7 +292,7 @@ function RegisterPage() {
     const start = new Date(rangeFrom + "T00:00:00");
     const end = new Date(rangeTo + "T00:00:00");
     const max = new Date();
-    max.setMonth(max.getMonth() + 18);
+    max.setMonth(max.getMonth() + 24); // Rango extendido para seguridad
     const today = new Date(todayISO() + "T00:00:00");
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       if (d >= today && d <= max) isos.push(toLocalISO(d));
@@ -393,7 +393,7 @@ function RegisterPage() {
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
               <HardHat className="h-5 w-5" />
             </span>
-            <span className="font-extrabold tracking-tight">Voluntarios Obra</span>
+            <span className="font-extrabold tracking-tight">Voluntarios LDC</span>
           </Link>
           {lastSaved && (
             <span className="flex items-center gap-1.5 text-xs text-primary-foreground/70">
@@ -681,7 +681,7 @@ function RegisterPage() {
               <h1 className="text-2xl font-extrabold tracking-tight">¿Qué días podés venir?</h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 Tocá los días del calendario en los que estás disponible (se marcan en verde).
-                Podés navegar los próximos 18 meses.
+                Podés navegar el calendario y marcar tus días disponibles.
               </p>
 
               <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-4">

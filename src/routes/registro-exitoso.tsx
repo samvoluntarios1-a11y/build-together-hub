@@ -15,7 +15,7 @@ export const Route = createFileRoute("/registro-exitoso")({
   }),
   head: () => ({
     meta: [
-      { title: "¡Registro exitoso! — Voluntarios Obra" },
+      { title: "¡Registro exitoso! — Voluntarios LDC" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -43,7 +43,7 @@ function SuccessPage() {
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Comprobante de registro
               </p>
-              <p className="font-extrabold text-primary">Voluntarios Obra</p>
+              <p className="font-extrabold text-primary">Voluntarios LDC</p>
             </div>
           </div>
 
@@ -72,7 +72,7 @@ function SuccessPage() {
 
           <div className="flex items-center justify-between border-t border-border pt-4 text-xs text-muted-foreground">
             <span>Fecha de registro: {today}</span>
-            <span>voluntarios-obra</span>
+            <span>voluntarios-ldc</span>
           </div>
         </div>
 
