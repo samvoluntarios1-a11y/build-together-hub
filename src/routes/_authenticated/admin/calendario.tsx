@@ -21,8 +21,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { CategoryIcon } from "@/lib/icons";
 import { STATUS_LABELS, type AssignmentRow, type WorkCategory } from "@/lib/types";
 import { toast } from "sonner";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, parseISO, isWithinInterval } from "date-fns";
 import { es } from "date-fns/locale";
+import { AssignmentModal } from "@/components/admin/AssignmentModal";
+import { downloadCSV, downloadExcel, printHtmlReport, reportHeader, reportFooter } from "@/lib/export";
+import { updateAssignment, deleteAssignment } from "@/lib/calendar.functions";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/admin/calendario")({
   validateSearch: (search: Record<string, unknown>) => ({
