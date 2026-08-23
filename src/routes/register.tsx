@@ -681,7 +681,7 @@ function RegisterPage() {
               <h1 className="text-2xl font-extrabold tracking-tight">¿Qué días podés venir?</h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 Tocá los días del calendario en los que estás disponible (se marcan en verde).
-                Podés navegar los próximos 18 meses.
+                Podés navegar el calendario y marcar tus días disponibles.
               </p>
 
               <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-4">
