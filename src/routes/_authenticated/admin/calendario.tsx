@@ -490,9 +490,24 @@ function CalendarioPage() {
                       <h4 className="font-bold text-slate-900">{a.profiles?.full_name}</h4>
                       <p className="text-[10px] text-slate-500">#{a.profiles?.volunteer_number} · {a.profiles?.locality}</p>
                     </div>
-                    <button className="text-slate-400 hover:text-slate-900">
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="text-slate-400 hover:text-slate-900">
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem className="text-xs font-bold" onClick={() => updateStatusMutation.mutate({ id: a.id, status: 'confirmed' })}>Confirmar</DropdownMenuItem>
+                        <DropdownMenuItem className="text-xs font-bold" onClick={() => updateStatusMutation.mutate({ id: a.id, status: 'completed' })}>Marcar Completado</DropdownMenuItem>
+                        <DropdownMenuItem className="text-xs font-bold" onClick={() => updateStatusMutation.mutate({ id: a.id, status: 'cancelled' })}>Cancelar</DropdownMenuItem>
+                        <DropdownMenuItem className="text-xs font-bold text-red-500" onClick={() => {
+                          if (confirm('¿Eliminar esta asignación?')) deleteMutation.mutate(a.id);
+                        }}>
+                          <Trash2 className="h-3 w-3 mr-1" /> Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                   
                   <div className="flex items-center gap-2">
