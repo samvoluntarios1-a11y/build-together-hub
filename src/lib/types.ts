@@ -6,6 +6,13 @@ export type AssignmentStatus =
   | "cancelled"
   | "completed";
 
+export const STATUS_LABELS: Record<AssignmentStatus, string> = {
+  assigned: "Asignado",
+  confirmed: "Confirmado",
+  completed: "Completado",
+  cancelled: "Cancelado"
+};
+
 export interface WorkCategory {
   id: string;
   name: string;
