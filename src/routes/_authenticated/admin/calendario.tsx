@@ -346,6 +346,68 @@ function CalendarioPage() {
           </div>
         </div>
 
+        {/* Filters and Toggle */}
+        <div className="bg-white border-b border-slate-200 px-6 py-3 flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] font-black uppercase text-slate-500">Categorías:</label>
+            <div className="flex flex-wrap gap-1">
+              {categories?.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    setFilterCategories(prev => 
+                      prev.includes(cat.id) ? prev.filter(id => id !== cat.id) : [...prev, cat.id]
+                    );
+                  }}
+                  className={`px-2 py-0.5 rounded-full text-[9px] font-bold border transition-all ${
+                    filterCategories.includes(cat.id)
+                      ? 'bg-navy text-white border-navy'
+                      : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+              {filterCategories.length > 0 && (
+                <button 
+                  onClick={() => setFilterCategories([])}
+                  className="px-2 py-0.5 rounded-full text-[9px] font-bold text-red-500 hover:bg-red-50"
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="h-4 w-px bg-slate-200"></div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] font-black uppercase text-slate-500">Nivel:</label>
+            <select 
+              value={filterLevel} 
+              onChange={(e) => setFilterLevel(e.target.value)}
+              className="text-[10px] font-bold bg-slate-50 border-slate-200 rounded px-1 py-0.5 outline-none focus:ring-1 focus:ring-navy"
+            >
+              <option value="all">Todos</option>
+              <option value="primaria">Primaria</option>
+              <option value="secundaria">Secundaria</option>
+              <option value="basica">Básica</option>
+            </select>
+          </div>
+
+          <div className="flex-1"></div>
+
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <span className="text-[10px] font-black uppercase text-slate-500 group-hover:text-navy transition">Mostrar Disponibilidad</span>
+            <div 
+              className={`w-8 h-4 rounded-full relative transition-colors ${showAvailability ? 'bg-success' : 'bg-slate-200'}`}
+              onClick={() => setShowAvailability(!showAvailability)}
+            >
+              <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${showAvailability ? 'left-4.5' : 'left-0.5'}`}></div>
+            </div>
+          </label>
+        </div>
+
         {/* Calendar Grid */}
         <div className="flex-1 overflow-y-auto">
           <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/50">
