@@ -276,7 +276,7 @@ function AdminDashboard() {
       </div>
 
       {/* Filters */}
-      <div className="card-soft p-5">
+      <div className="card-soft p-5 space-y-4">
         <div className="flex flex-wrap items-end gap-4">
           <div className="flex-1 min-w-[200px]">
             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Buscar por nombre</label>
@@ -315,11 +315,87 @@ function AdminDashboard() {
             </select>
           </div>
           <button 
-            onClick={() => { setSearchTerm(""); setLocalityFilter(""); setCategoryFilter(""); setPage(0); }}
+            onClick={() => { 
+              setSearchTerm(""); 
+              setLocalityFilter(""); 
+              setCategoryFilter(""); 
+              setDateFilterMode("none");
+              setPage(0); 
+            }}
             className="btn-outline h-10 px-4 text-xs"
           >
             Limpiar
           </button>
+        </div>
+
+        <div className="pt-4 border-t border-slate-100">
+          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+            <CalendarDays className="h-4 w-4" /> Filtrar por Disponibilidad
+          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex bg-slate-100 p-0.5 rounded-lg">
+              {[
+                { id: "none", label: "Cualquiera" },
+                { id: "day", label: "Día" },
+                { id: "range", label: "Rango" },
+                { id: "week", label: "Semana" },
+                { id: "month", label: "Mes" }
+              ].map((mode) => (
+                <button
+                  key={mode.id}
+                  onClick={() => { setDateFilterMode(mode.id as any); setPage(0); }}
+                  className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition ${dateFilterMode === mode.id ? "bg-white shadow-sm text-primary" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+
+            {dateFilterMode === "day" && (
+              <input 
+                type="date" 
+                className="input-field h-8 text-xs w-40"
+                value={selectedDate}
+                onChange={(e) => { setSelectedDate(e.target.value); setPage(0); }}
+              />
+            )}
+
+            {dateFilterMode === "range" && (
+              <div className="flex items-center gap-2">
+                <input 
+                  type="date" 
+                  className="input-field h-8 text-xs w-36"
+                  value={dateRange.from}
+                  onChange={(e) => { setDateRange(prev => ({ ...prev, from: e.target.value })); setPage(0); }}
+                />
+                <span className="text-slate-400 text-xs">-</span>
+                <input 
+                  type="date" 
+                  className="input-field h-8 text-xs w-36"
+                  value={dateRange.to}
+                  onChange={(e) => { setDateRange(prev => ({ ...prev, to: e.target.value })); setPage(0); }}
+                />
+              </div>
+            )}
+
+            {(dateFilterMode === "week" || dateFilterMode === "month") && (
+              <input 
+                type="date" 
+                className="input-field h-8 text-xs w-40"
+                value={selectedDate}
+                onChange={(e) => { setSelectedDate(e.target.value); setPage(0); }}
+              />
+            )}
+            
+            {dateFilterMode !== "none" && (
+              <button 
+                onClick={() => setDateFilterMode("none")}
+                className="text-slate-400 hover:text-red-500 transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
