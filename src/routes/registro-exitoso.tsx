@@ -59,7 +59,7 @@ function SuccessPage() {
               #{n ?? "—"}
             </p>
             <p className="mt-3 text-sm text-muted-foreground">
-              Guardalo: te lo van a pedir al ingresar a la obra.
+              Guardalo: te lo van a pedir al ingresar a los voluntarios.
               {typeof dias === "number" && dias > 0 && (
                 <>
                   <br />

@@ -117,7 +117,7 @@ function CategoriasPage() {
     <div className="space-y-6 p-6 md:p-8">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Configuración de Obra</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Configuración LDC</h1>
           <p className="text-slate-500 text-sm">Administrá los oficios, habilidades y categorías de trabajo.</p>
         </div>
         <button 
