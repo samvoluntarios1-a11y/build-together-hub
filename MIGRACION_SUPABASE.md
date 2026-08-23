@@ -1,6 +1,6 @@
 # Guía de Migración a Supabase Propio (Esquema Final Auditado)
 
-Esta guía ha sido auditada exhaustivamente para coincidir con el código actual de la aplicación. Seguí estos pasos para migrar a tu propio Supabase.
+Esta guía ha sido auditada exhaustivamente para coincidir con el código actual de la aplicación e incluye las funciones de limpieza programada y políticas RLS completas.
 
 ## 1. Conexión del Proyecto
 
@@ -154,6 +154,38 @@ RETURNS BOOLEAN LANGUAGE SQL STABLE SECURITY DEFINER SET search_path = public AS
   SELECT NOT EXISTS (SELECT 1 FROM public.profiles WHERE volunteer_number = trim(p_number));
 $$;
 
+-- Funciones de Limpieza
+CREATE OR REPLACE FUNCTION public.cleanup_old_availability()
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+    deleted_count int;
+BEGIN
+    DELETE FROM public.availability
+    WHERE available_date < CURRENT_DATE - INTERVAL '7 days';
+    
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    
+    INSERT INTO public.audit_logs (action, table_name, description)
+    VALUES ('DELETE_CLEANUP', 'availability', format('Se eliminaron %s registros de disponibilidad antiguos.', deleted_count));
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.cleanup_old_assignments()
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+    deleted_count int;
+BEGIN
+    DELETE FROM public.calendar_assignments
+    WHERE assignment_date < CURRENT_DATE - INTERVAL '30 days'
+      AND status NOT IN ('confirmed', 'completed');
+    
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    
+    INSERT INTO public.audit_logs (action, table_name, description)
+    VALUES ('DELETE_CLEANUP', 'calendar_assignments', format('Se eliminaron %s asignaciones antiguas no confirmadas.', deleted_count));
+END;
+$$;
+
 -- 6. TRIGGERS
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$ LANGUAGE plpgsql;
@@ -189,16 +221,69 @@ END; $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_limit_skills BEFORE INSERT ON public.volunteer_skills FOR EACH ROW EXECUTE FUNCTION enforce_skill_limits();
 
--- 8. PERMISOS RLS
+-- 8. PERMISOS RLS Y GRANTS
+
+-- Grants iniciales para API
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+
+-- profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated, anon;
 CREATE POLICY "Public insert profile" ON public.profiles FOR INSERT TO anon, authenticated WITH CHECK (true);
 CREATE POLICY "Staff select all or own" ON public.profiles FOR SELECT TO authenticated USING (is_staff(auth.uid()) OR user_id = auth.uid());
 CREATE POLICY "Staff update all or own" ON public.profiles FOR UPDATE TO authenticated USING (is_staff(auth.uid()) OR user_id = auth.uid());
 
+-- user_roles
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON public.user_roles TO authenticated;
+CREATE POLICY "Users can read own roles" ON public.user_roles FOR SELECT TO authenticated USING (auth.uid() = user_id OR is_staff(auth.uid()));
+CREATE POLICY "Admins manage roles" ON public.user_roles FOR ALL TO authenticated USING (has_role(auth.uid(), 'admin'));
+
+-- work_categories
 ALTER TABLE public.work_categories ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON public.work_categories TO authenticated, anon;
 CREATE POLICY "Public read active categories" ON public.work_categories FOR SELECT TO anon, authenticated USING (is_active = true OR is_staff(auth.uid()));
+CREATE POLICY "Staff manage categories" ON public.work_categories FOR ALL TO authenticated USING (is_staff(auth.uid()));
+
+-- volunteer_skills
+ALTER TABLE public.volunteer_skills ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.volunteer_skills TO authenticated, anon;
+CREATE POLICY "Public insert skills" ON public.volunteer_skills FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Staff read all or own skills" ON public.volunteer_skills FOR SELECT TO authenticated USING (is_staff(auth.uid()) OR EXISTS (SELECT 1 FROM public.profiles WHERE id = volunteer_id AND user_id = auth.uid()));
+CREATE POLICY "Users manage own skills" ON public.volunteer_skills FOR ALL TO authenticated USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = volunteer_id AND user_id = auth.uid()) OR is_staff(auth.uid()));
+
+-- availability
+ALTER TABLE public.availability ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.availability TO authenticated, anon;
+CREATE POLICY "Public insert availability" ON public.availability FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Staff read all or own availability" ON public.availability FOR SELECT TO authenticated USING (is_staff(auth.uid()) OR EXISTS (SELECT 1 FROM public.profiles WHERE id = volunteer_id AND user_id = auth.uid()));
+CREATE POLICY "Users manage own availability" ON public.availability FOR ALL TO authenticated USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = volunteer_id AND user_id = auth.uid()) OR is_staff(auth.uid()));
+
+-- accommodation_requests
+ALTER TABLE public.accommodation_requests ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.accommodation_requests TO authenticated, anon;
+CREATE POLICY "Public insert accommodation" ON public.accommodation_requests FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Staff read all or own accommodation" ON public.accommodation_requests FOR SELECT TO authenticated USING (is_staff(auth.uid()) OR EXISTS (SELECT 1 FROM public.profiles WHERE id = volunteer_id AND user_id = auth.uid()));
+CREATE POLICY "Users manage own accommodation" ON public.accommodation_requests FOR ALL TO authenticated USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = volunteer_id AND user_id = auth.uid()) OR is_staff(auth.uid()));
+
+-- calendar_assignments
+ALTER TABLE public.calendar_assignments ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.calendar_assignments TO authenticated;
+CREATE POLICY "Staff manage assignments" ON public.calendar_assignments FOR ALL TO authenticated USING (is_staff(auth.uid()));
+CREATE POLICY "Users read own assignments" ON public.calendar_assignments FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = volunteer_id AND user_id = auth.uid()));
+
+-- audit_logs
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON public.audit_logs TO authenticated;
+CREATE POLICY "Only admins read audit" ON public.audit_logs FOR SELECT TO authenticated USING (has_role(auth.uid(), 'admin'));
+
+-- system_settings
+ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, UPDATE ON public.system_settings TO authenticated;
+CREATE POLICY "Only admins read settings" ON public.system_settings FOR SELECT TO authenticated USING (has_role(auth.uid(), 'admin') OR is_staff(auth.uid()));
+CREATE POLICY "Only admins update settings" ON public.system_settings FOR UPDATE TO authenticated USING (has_role(auth.uid(), 'admin'));
 
 -- 9. DATOS INICIALES
 INSERT INTO public.work_categories (name, description, icon, color, sort_order) VALUES
@@ -219,4 +304,9 @@ INSERT INTO public.system_settings (key, value, description) VALUES
 ('project_end_date', '"2028-03-01"', 'Fin de obra (18 meses)'),
 ('cleanup_availability_days', '7', 'Días para borrar disponibilidad pasada'),
 ('cleanup_assignments_days', '30', 'Días para borrar asignaciones antiguas');
+
+-- 10. PROGRAMACIÓN DE TAREAS (PG_CRON)
+-- Nota: Asegurate de tener habilitada la extensión pg_cron en tu proyecto.
+-- SELECT cron.schedule('0 0 * * *', 'SELECT public.cleanup_old_availability()');
+-- SELECT cron.schedule('0 0 * * *', 'SELECT public.cleanup_old_assignments()');
 ```
