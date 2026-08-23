@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HardHat, ClipboardList, CalendarDays, BedDouble, ArrowRight } from "lucide-react";
+import { ClipboardList, CalendarDays, BedDouble, ArrowRight } from "lucide-react";
 import heroImg from "@/assets/hero-voluntarios.jpg";
+import { AppLogo } from "@/components/AppLogo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,7 +30,7 @@ const STEPS = [
     text: "Tu número de voluntario, nombre y localidad. Sin crear cuenta ni contraseñas.",
   },
   {
-    icon: HardHat,
+    icon: AppLogo,
     title: "Cargá tus habilidades",
     text: "Hasta 3 oficios con tu nivel y años de experiencia, para asignarte donde más rendís.",
   },
@@ -50,14 +51,7 @@ function Landing() {
     <div className="min-h-screen bg-background">
       <header className="bg-primary text-primary-foreground">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-              <HardHat className="h-6 w-6" />
-            </span>
-            <span className="text-lg font-extrabold tracking-tight">
-              Voluntarios LDC
-            </span>
-          </div>
+          <AppLogo variant="default" />
         </div>
       </header>
 
