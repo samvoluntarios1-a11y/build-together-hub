@@ -302,11 +302,42 @@ function CalendarioPage() {
           </div>
           
           <div className="flex gap-3">
-            <button className="btn-outline h-9 px-3 text-xs">
-              <Filter className="h-4 w-4" />
-              Filtros
-            </button>
-            <button className="btn-navy h-9 px-4 text-xs">
+            <div className="flex bg-slate-100 p-0.5 rounded-lg mr-2">
+              <button
+                onClick={() => setViewMode("month")}
+                className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition ${viewMode === "month" ? "bg-white shadow-sm text-primary" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                Mes
+              </button>
+              <button
+                onClick={() => setViewMode("week")}
+                className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition ${viewMode === "week" ? "bg-white shadow-sm text-primary" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                Semana
+              </button>
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="btn-outline h-9 px-3 text-xs">
+                  <Download className="h-4 w-4" />
+                  Exportar
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>Exportar a CSV</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>Exportar a Excel</DropdownMenuItem>
+                <DropdownMenuItem onClick={handlePrintPDF}>Imprimir PDF</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <button 
+              className="btn-navy h-9 px-4 text-xs"
+              onClick={() => {
+                setPreselectedCategoryId("");
+                setIsAssigning(true);
+              }}
+            >
               <Plus className="h-4 w-4" />
               Nueva Asignación
             </button>
