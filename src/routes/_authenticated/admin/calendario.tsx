@@ -442,7 +442,7 @@ function CalendarioPage() {
                   </div>
                   
                   <div className={`flex flex-col gap-1 overflow-hidden mt-1 ${viewMode === 'week' ? 'flex-1' : ''}`}>
-                    {dayAssignments.slice(0, 3).map(a => (
+                    {(viewMode === 'month' ? dayAssignments.slice(0, 3) : dayAssignments.slice(0, 15)).map(a => (
                       <div 
                         key={a.id}
                         className="truncate rounded px-1.5 py-0.5 text-[10px] font-medium border-l-2"
