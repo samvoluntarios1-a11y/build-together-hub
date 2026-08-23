@@ -117,8 +117,10 @@ export const getAssignmentRecommendations = createServerFn({ method: "GET" })
     // 3. Sort recommended
     const levelWeight: Record<string, number> = { primaria: 3, secundaria: 2, basica: 1 };
     recommended.sort((a, b) => {
-      if (a.skill_level !== b.skill_level) {
-        return levelWeight[b.skill_level] - levelWeight[a.skill_level];
+      const weightA = levelWeight[a.skill_level] || 0;
+      const weightB = levelWeight[b.skill_level] || 0;
+      if (weightA !== weightB) {
+        return weightB - weightA;
       }
       return b.years_experience - a.years_experience;
     });
