@@ -4,7 +4,6 @@ import { SuccessSearch } from "./registro-exitoso";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  HardHat,
   User,
   CalendarDays,
   BedDouble,
@@ -22,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { submitRegistration } from "@/lib/registration.functions";
 import { AvailabilityCalendar } from "@/components/register/AvailabilityCalendar";
 import { CategoryIcon } from "@/lib/icons";
+import { AppLogo } from "@/components/AppLogo";
 import {
   MAX_SKILLS,
   SKILL_LEVEL_LABELS,
@@ -389,11 +389,8 @@ function RegisterPage() {
     <div className="min-h-screen bg-background">
       <header className="bg-primary text-primary-foreground no-print">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
-          <Link to="/" className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-              <HardHat className="h-5 w-5" />
-            </span>
-            <span className="font-extrabold tracking-tight">Voluntarios LDC</span>
+          <Link to="/">
+            <AppLogo variant="default" iconClassName="h-5 w-5" textClassName="font-extrabold tracking-tight" />
           </Link>
           {lastSaved && (
             <span className="flex items-center gap-1.5 text-xs text-primary-foreground/70">

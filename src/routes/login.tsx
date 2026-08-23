@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { HardHat, Loader2, LogIn, UserPlus } from "lucide-react";
+import { Loader2, LogIn, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { AppLogo } from "@/components/AppLogo";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -127,14 +128,13 @@ function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-primary px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="mb-8 text-center text-primary-foreground">
-          <Link to="/" className="inline-flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
-              <HardHat className="h-7 w-7" />
-            </span>
-            <span className="text-2xl font-extrabold tracking-tight">
-              Voluntarios LDC
-            </span>
+        <div className="mb-8 text-center text-primary-foreground flex flex-col items-center">
+          <Link to="/" className="inline-block">
+            <AppLogo 
+              variant="default" 
+              iconClassName="h-8 w-8" 
+              textClassName="text-2xl font-extrabold tracking-tight text-white" 
+            />
           </Link>
           <p className="mt-2 text-sm text-primary-foreground/70">
             Panel de administración — solo coordinadores
