@@ -321,7 +321,7 @@ function VolunteerCard({
           <div className="flex items-center gap-1 text-slate-500 font-bold uppercase">
             <Briefcase className="h-3 w-3" /> 
             <span className={volunteer.skill_level === 'primaria' ? 'text-navy' : 'text-slate-600'}>
-              {SKILL_LEVEL_LABELS[volunteer.skill_level as any]}
+              {SKILL_LEVEL_LABELS[volunteer.skill_level as keyof typeof SKILL_LEVEL_LABELS] || volunteer.skill_level}
             </span> 
             · {volunteer.years_experience} años
           </div>
