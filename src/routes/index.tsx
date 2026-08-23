@@ -77,7 +77,7 @@ function Landing() {
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <span className="text-sm text-primary-foreground/70">
-                  Sin cuenta · Sin contraseña · Desde tu celular
+                  elimina tambien Sin cuenta · Sin contraseña · Desde tu celular
                 </span>
               </div>
             </div>
