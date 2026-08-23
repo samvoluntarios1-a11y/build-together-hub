@@ -461,6 +461,31 @@ function CalendarioPage() {
                       </div>
                     )}
                   </div>
+
+                  {showAvailability && availabilitySummary?.[dateStr] && (
+                    <div className="flex flex-wrap gap-1 mt-auto pt-2">
+                      {Object.entries(availabilitySummary[dateStr]).map(([catId, count]) => {
+                        const cat = categories?.find(c => c.id === catId);
+                        if (!cat) return null;
+                        return (
+                          <button
+                            key={catId}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreselectedCategoryId(catId);
+                              setSelectedDay(day);
+                              setIsAssigning(true);
+                            }}
+                            className="flex items-center gap-1 rounded bg-slate-50 px-1 py-0.5 text-[9px] font-bold text-slate-500 border border-slate-200 hover:border-primary hover:text-primary transition-all"
+                            title={`Disponibles para ${cat.name}`}
+                          >
+                            <CategoryIcon name={cat.icon || 'hard-hat'} className="h-2.5 w-2.5" />
+                            {count}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
