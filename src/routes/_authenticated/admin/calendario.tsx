@@ -19,7 +19,7 @@ import {
 import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryIcon } from "@/lib/icons";
-import { STATUS_LABELS, type AssignmentRow, type WorkCategory } from "@/lib/types";
+import { STATUS_LABELS, type AssignmentRow, type WorkCategory, type AssignmentStatus } from "@/lib/types";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, parseISO, isWithinInterval } from "date-fns";
 import { es } from "date-fns/locale";
