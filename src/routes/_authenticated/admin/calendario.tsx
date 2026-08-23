@@ -44,8 +44,13 @@ function CalendarioPage() {
   const queryClient = useQueryClient();
   const search = Route.useSearch();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [selectedDay, setSelectedDay] = useState<Date>(new Date());
   const [isAssigning, setIsAssigning] = useState(false);
+  const [filterCategories, setFilterCategories] = useState<string[]>([]);
+  const [filterLevel, setFilterLevel] = useState<string>("all");
+  const [showAvailability, setShowAvailability] = useState(false);
+  const [preselectedCategoryId, setPreselectedCategoryId] = useState<string>("");
+  const [viewMode, setViewMode] = useState<"month" | "week">("month");
   
   // Fetch assignments for the current month
   const monthStart = startOfMonth(currentDate);
