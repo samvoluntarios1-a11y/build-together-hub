@@ -105,7 +105,6 @@ function CalendarioPage() {
       return eachDayOfInterval({ start, end });
     } else {
       const start = startOfWeek(currentDate, { weekStartsOn: 1 });
-      const end = endOfWeek(start, { weekStartsOn: 1 });
       return eachDayOfInterval({ start, end: addDays(start, 6) });
     }
   }, [currentDate, monthStart, monthEnd, viewMode]);
