@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Nueva contraseña — Voluntarios Obra" },
+      { title: "Nueva contraseña — Voluntarios LDC" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -58,7 +58,7 @@ function ResetPasswordPage() {
               <HardHat className="h-7 w-7" />
             </span>
             <span className="text-2xl font-extrabold tracking-tight">
-              Voluntarios Obra
+              Voluntarios LDC
             </span>
           </Link>
         </div>

@@ -107,10 +107,10 @@ export function reportHeader(title: string, subtitle: string) {
     month: "2-digit",
     year: "numeric",
   });
-  return `<div class="report-header"><div><div class="brand">Voluntarios Obra</div><h1>${title}</h1></div><div style="text-align:right;color:#64748b">${subtitle}<br>Generado: ${today}</div></div>`;
+  return `<div class="report-header"><div><div class="brand">Voluntarios LDC</div><h1>${title}</h1></div><div style="text-align:right;color:#64748b">${subtitle}<br>Generado: ${today}</div></div>`;
 }
 
 export function reportFooter() {
   const today = new Date().toLocaleString("es-AR");
-  return `<div class="footer"><span>Voluntarios Obra — Documento generado automáticamente</span><span>${today}</span></div>`;
+  return `<div class="footer"><span>Voluntarios LDC — Documento generado automáticamente</span><span>${today}</span></div>`;
 }
