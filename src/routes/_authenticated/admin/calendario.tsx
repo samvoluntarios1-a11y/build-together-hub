@@ -113,7 +113,7 @@ function CalendarioPage() {
     queryKey: ["availability-summary", format(currentDate, "yyyy-MM"), viewMode],
     queryFn: async () => {
       const start = viewMode === "month" ? startOfWeek(monthStart, { weekStartsOn: 1 }) : startOfWeek(currentDate, { weekStartsOn: 1 });
-      const end = viewMode === "month" ? endOfWeek(monthEnd, { weekStartsOn: 1 }) : endOfWeek(currentDate, { weekStartsOn: 1 });
+      const end = viewMode === "month" ? endOfWeek(monthEnd, { weekStartsOn: 1 }) : addDays(start, 6);
 
       const { data, error } = await supabase
         .from("availability")
