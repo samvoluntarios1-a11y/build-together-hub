@@ -40,6 +40,18 @@ function AdminDashboard() {
   const [localityFilter, setLocalityFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   
+  // New date filters
+  const [dateFilterMode, setDateFilterMode] = useState<"none" | "day" | "range" | "week" | "month">("none");
+  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+  const [dateRange, setDateRange] = useState<{from: string, to: string}>({
+    from: format(new Date(), "yyyy-MM-dd"),
+    to: format(addDays(new Date(), 7), "yyyy-MM-dd")
+  });
+
+  // Modal state
+  const [selectedVolunteer, setSelectedVolunteer] = useState<VolunteerRow | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   // Fetch volunteers with skills and availability
   const { data: volunteersData, isLoading } = useQuery({
     queryKey: ["volunteers", page, searchTerm, localityFilter, categoryFilter],
