@@ -1,0 +1,270 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { 
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  UserPlus,
+  MoreVertical,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  HardHat,
+  Filter,
+  Users,
+  Search,
+  Plus,
+  BedDouble
+} from "lucide-react";
+import { useState, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { CategoryIcon } from "@/lib/icons";
+import { STATUS_LABELS, type AssignmentRow, type WorkCategory } from "@/lib/types";
+import { toast } from "sonner";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
+
+export const Route = createFileRoute("/_authenticated/admin/calendario")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    volunteer: typeof search["volunteer"] === "string" ? search["volunteer"] : undefined,
+  }),
+  component: CalendarioPage,
+});
+
+function CalendarioPage() {
+  const queryClient = useQueryClient();
+  const search = Route.useSearch();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
+  
+  // Fetch assignments for the current month
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  
+  const { data: assignments, isLoading: loadingAssignments } = useQuery({
+    queryKey: ["assignments", format(currentDate, "yyyy-MM")],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("calendar_assignments")
+        .select(`
+          *,
+          profiles (
+            full_name,
+            volunteer_number,
+            locality,
+            accommodation_requests (needs_accommodation, is_fulfilled)
+          ),
+          work_categories (name, color, icon)
+        `)
+        .gte("assignment_date", format(startOfWeek(monthStart), "yyyy-MM-dd"))
+        .lte("assignment_date", format(endOfWeek(monthEnd), "yyyy-MM-dd"));
+        
+      if (error) throw error;
+      return data as unknown as AssignmentRow[];
+    }
+  });
+
+  const { data: categories } = useQuery({
+    queryKey: ["work-categories-admin"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("work_categories")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order");
+      if (error) throw error;
+      return data as WorkCategory[];
+    }
+  });
+
+  // Calendar logic
+  const days = useMemo(() => {
+    const start = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const end = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    return eachDayOfInterval({ start, end });
+  }, [monthStart, monthEnd]);
+
+  const assignmentsByDay = useMemo(() => {
+    const map = new Map<string, AssignmentRow[]>();
+    assignments?.forEach(a => {
+      const date = a.assignment_date;
+      if (!map.has(date)) map.set(date, []);
+      map.get(date)!.push(a);
+    });
+    return map;
+  }, [assignments]);
+
+  const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1));
+  const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
+  const handleToday = () => setCurrentDate(new Date());
+
+  return (
+    <div className="flex h-[calc(100vh-4rem)] flex-col bg-slate-50 md:flex-row overflow-hidden">
+      {/* Calendar Main Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Calendar Header */}
+        <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-extrabold tracking-tight text-slate-900 capitalize">
+              {format(currentDate, "MMMM yyyy", { locale: es })}
+            </h1>
+            <div className="flex gap-1 border border-slate-200 rounded-lg p-0.5">
+              <button onClick={handlePrevMonth} className="p-1.5 hover:bg-slate-50 rounded-md text-slate-500 transition">
+                <ChevronLeft className="h-4.5 w-4.5" />
+              </button>
+              <button onClick={handleToday} className="px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-md transition">
+                Hoy
+              </button>
+              <button onClick={handleNextMonth} className="p-1.5 hover:bg-slate-50 rounded-md text-slate-500 transition">
+                <ChevronRight className="h-4.5 w-4.5" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex gap-3">
+            <button className="btn-outline h-9 px-3 text-xs">
+              <Filter className="h-4 w-4" />
+              Filtros
+            </button>
+            <button className="btn-navy h-9 px-4 text-xs">
+              <Plus className="h-4 w-4" />
+              Nueva Asignación
+            </button>
+          </div>
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/50">
+            {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map(day => (
+              <div key={day} className="py-2 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                {day}
+              </div>
+            ))}
+          </div>
+          
+          <div className="grid grid-cols-7 auto-rows-[minmax(120px,1fr)] bg-slate-200 gap-[1px]">
+            {days.map((day, i) => {
+              const dateStr = format(day, "yyyy-MM-dd");
+              const isCurrentMonth = isSameMonth(day, monthStart);
+              const isToday = isSameDay(day, new Date());
+              const dayAssignments = assignmentsByDay.get(dateStr) || [];
+              
+              return (
+                <div 
+                  key={dateStr}
+                  className={`relative flex flex-col gap-1 p-2 bg-white transition-colors hover:bg-slate-50/80 cursor-pointer ${!isCurrentMonth ? 'text-slate-300' : ''}`}
+                  onClick={() => setSelectedDay(day)}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={`text-sm font-bold ${isToday ? 'flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white' : ''}`}>
+                      {format(day, "d")}
+                    </span>
+                    {dayAssignments.length > 0 && (
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {dayAssignments.length}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col gap-1 overflow-hidden mt-1">
+                    {dayAssignments.slice(0, 3).map(a => (
+                      <div 
+                        key={a.id}
+                        className="truncate rounded px-1.5 py-0.5 text-[10px] font-medium border-l-2"
+                        style={{ 
+                          backgroundColor: `${a.work_categories?.color || '#1a3a5c'}15`, 
+                          borderColor: a.work_categories?.color || '#1a3a5c',
+                          color: a.work_categories?.color || '#1a3a5c'
+                        }}
+                      >
+                        {a.profiles?.full_name.split(' ')[0]} · {a.work_categories?.name}
+                      </div>
+                    ))}
+                    {dayAssignments.length > 3 && (
+                      <div className="text-[9px] font-bold text-slate-400 pl-1.5">
+                        +{dayAssignments.length - 3} más
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar Detail */}
+      <div className="w-full md:w-80 border-l border-slate-200 bg-white flex flex-col shrink-0">
+        <div className="p-6 border-b border-slate-200">
+          <h2 className="text-lg font-extrabold text-slate-900">
+            {selectedDay ? format(selectedDay, "d 'de' MMMM", { locale: es }) : "Detalle del día"}
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            {selectedDay ? assignmentsByDay.get(format(selectedDay, "yyyy-MM-dd"))?.length || 0 : 0} asignaciones programadas
+          </p>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {selectedDay ? (
+            assignmentsByDay.get(format(selectedDay, "yyyy-MM-dd"))?.length ? (
+              assignmentsByDay.get(format(selectedDay, "yyyy-MM-dd"))?.map(a => (
+                <div key={a.id} className="card-soft p-3 text-sm space-y-2 border-l-4" style={{ borderLeftColor: a.work_categories?.color }}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-bold text-slate-900">{a.profiles?.full_name}</h4>
+                      <p className="text-[10px] text-slate-500">#{a.profiles?.volunteer_number} · {a.profiles?.locality}</p>
+                    </div>
+                    <button className="text-slate-400 hover:text-slate-900">
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                      <CategoryIcon name={a.work_categories?.icon || 'hard-hat'} className="h-3 w-3" />
+                      {a.work_categories?.name}
+                    </span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      a.status === 'confirmed' ? 'bg-success/10 text-success' : 'bg-accent/10 text-accent'
+                    }`}>
+                      {STATUS_LABELS[a.status] || a.status}
+                    </span>
+                  </div>
+                  
+                  {a.profiles?.accommodation_requests?.[0]?.needs_accommodation && (
+                    <div className="flex items-center gap-1.5 text-[10px] text-accent font-bold bg-accent/5 rounded p-1.5 border border-accent/10">
+                      <BedDouble className="h-3 w-3" />
+                      Requiere Alojamiento
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="py-12 text-center text-slate-400 space-y-3">
+                <CalendarIcon className="mx-auto h-8 w-8 opacity-20" />
+                <p className="text-sm">No hay voluntarios asignados para este día.</p>
+                <button className="btn-outline h-8 px-3 text-xs">Asignar voluntario</button>
+              </div>
+            )
+          ) : (
+            <div className="py-12 text-center text-slate-400 space-y-3">
+              <CalendarIcon className="mx-auto h-8 w-8 opacity-20" />
+              <p className="text-sm">Seleccioná un día del calendario para ver el detalle.</p>
+            </div>
+          )}
+        </div>
+        
+        {selectedDay && (
+          <div className="p-4 border-t border-slate-200">
+            <button className="btn-navy w-full text-xs">
+              <UserPlus className="h-4 w-4" />
+              Asignar Voluntario a este día
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

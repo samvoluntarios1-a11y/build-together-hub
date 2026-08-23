@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { SuccessSearch } from "./registro-exitoso";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -396,7 +397,7 @@ function RegisterPage() {
           n: draft.volunteer_number.trim(),
           nombre: draft.full_name.trim(),
           dias: draft.dates.length,
-        },
+        } as SuccessSearch,
       });
     } catch (err) {
       console.error(err);
