@@ -128,7 +128,7 @@ function RegisterPage() {
         .from("work_categories")
         .select("id, name, description, color, icon, sort_order, is_active")
         .eq("is_active", true)
-        .order("sort_order");
+        .order("sort_order", { ascending: true });
       if (error) throw error;
       return (data ?? []) as WorkCategory[];
     },
