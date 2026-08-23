@@ -1,10 +1,10 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
-<!-- LOVABLE:END -->
+# Guía de Agente
+
+Este proyecto utiliza un sistema de gestión de voluntarios para construcción.
+
+## Pautas de Desarrollo
+
+- Mantener la identidad visual de "Voluntarios LDC".
+- Asegurar que el formulario público no requiera autenticación.
+- Respetar las políticas de seguridad RLS en la base de datos.
+- Las funciones de servidor deben manejar la lógica sensible.
