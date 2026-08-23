@@ -15,10 +15,13 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { downloadExcel, printHtmlReport, reportHeader, reportFooter } from "@/lib/export";
+import { downloadCSV, downloadExcel, printHtmlReport, reportHeader, reportFooter, type ExportFilters } from "@/lib/export";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
+import { ExportModal } from "@/components/admin/ExportModal";
+import { STATUS_LABELS, type AssignmentRow } from "@/lib/types";
+
 
 export const Route = createFileRoute("/_authenticated/admin/reportes")({
   component: ReportesPage,
@@ -26,6 +29,8 @@ export const Route = createFileRoute("/_authenticated/admin/reportes")({
 
 function ReportesPage() {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
 
   // Stats for the report preview
   const { data: stats } = useQuery({
