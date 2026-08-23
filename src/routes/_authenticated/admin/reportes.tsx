@@ -284,10 +284,14 @@ function ReportesPage() {
               <Download className="h-4 w-4" />
               Excel
             </button>
-            <button className="btn-outline h-9 flex-1 text-xs">
+            <button 
+              onClick={() => setIsExporting(true)}
+              className="btn-outline h-9 flex-1 text-xs"
+            >
               <Printer className="h-4 w-4" />
               PDF
             </button>
+
           </div>
         </div>
 
@@ -334,7 +338,7 @@ function ReportesPage() {
       <ExportModal 
         isOpen={isExporting}
         onClose={() => setIsExporting(false)}
-        onConfirm={(period) => handleExport(period, 'excel')}
+        onConfirm={(period) => handleExport(period, 'pdf')}
       />
 
 
