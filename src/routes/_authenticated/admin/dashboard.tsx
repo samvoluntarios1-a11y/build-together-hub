@@ -16,7 +16,8 @@ import {
   Search,
   CalendarDays,
   X,
-  ArrowRight
+  ArrowRight,
+  Trash2
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
@@ -27,6 +28,25 @@ import { SKILL_LEVEL_LABELS, STATUS_LABELS, type VolunteerRow, type AssignmentSt
 import { downloadCSV, downloadExcel } from "@/lib/export";
 import { toast } from "sonner";
 import { VolunteerProfileModal } from "@/components/admin/VolunteerProfileModal";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { deleteVolunteer } from "@/lib/volunteer.functions";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/dashboard")({
   component: AdminDashboard,
@@ -51,6 +71,25 @@ function AdminDashboard() {
   // Modal state
   const [selectedVolunteer, setSelectedVolunteer] = useState<VolunteerRow | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [volunteerToDelete, setVolunteerToDelete] = useState<VolunteerRow | null>(null);
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return deleteVolunteer({ id });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["volunteers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+      toast.success("Voluntario eliminado correctamente");
+      setVolunteerToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error("Error al eliminar el voluntario", {
+        description: error.message
+      });
+    }
+  });
   
   // Fetch volunteers with skills and availability
   const { data: volunteersData, isLoading } = useQuery({
@@ -516,9 +555,33 @@ function AdminDashboard() {
                         >
                           <UserPlus className="h-4 w-4" />
                         </Link>
-                        <button className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-900 transition">
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-900 transition">
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={() => { setSelectedVolunteer(v); setIsModalOpen(true); }}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              <span>Ver Perfil</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link to="/admin/calendario" search={{ volunteer: v.id } as any}>
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                <span>Asignar</span>
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                              onClick={() => setVolunteerToDelete(v)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>Eliminar Voluntario</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>
@@ -558,7 +621,35 @@ function AdminDashboard() {
         volunteer={selectedVolunteer}
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); setSelectedVolunteer(null); }}
+        onDelete={(v) => {
+          setIsModalOpen(false);
+          setSelectedVolunteer(null);
+          setVolunteerToDelete(v);
+        }}
       />
+
+      <AlertDialog open={!!volunteerToDelete} onOpenChange={(open) => !open && setVolunteerToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás completamente seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente al voluntario{" "}
+              <span className="font-bold text-slate-900">{volunteerToDelete?.full_name}</span>{" "}
+              y todas sus asignaciones, habilidades y registros de disponibilidad.
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => volunteerToDelete && deleteMutation.mutate(volunteerToDelete.id)}
+            >
+              {deleteMutation.isPending ? "Eliminando..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
