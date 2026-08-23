@@ -558,8 +558,9 @@ function CalendarioPage() {
       <AssignmentModal 
         isOpen={isAssigning}
         onClose={() => setIsAssigning(false)}
-        date={selectedDay || new Date()}
-        categoryId={preselectedCategoryId}
+        selectedDate={selectedDay || new Date()}
+        categories={categories || []}
+        defaultCategoryId={preselectedCategoryId}
       />
     </div>
   );
