@@ -5,24 +5,28 @@ import {
   HardHat, 
   Calendar, 
   BedDouble, 
-  ArrowRight,
-  Filter,
-  Search,
   Download,
   MoreVertical,
   CheckCircle2,
   Clock,
-  XCircle,
   ChevronLeft,
   ChevronRight,
-  UserPlus
+  UserPlus,
+  Eye,
+  Search,
+  CalendarDays,
+  X,
+  ArrowRight
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryIcon } from "@/lib/icons";
 import { SKILL_LEVEL_LABELS, STATUS_LABELS, type VolunteerRow, type AssignmentStatus } from "@/lib/types";
 import { downloadCSV, downloadExcel } from "@/lib/export";
 import { toast } from "sonner";
+import { VolunteerProfileModal } from "@/components/admin/VolunteerProfileModal";
 
 export const Route = createFileRoute("/_authenticated/admin/dashboard")({
   component: AdminDashboard,
