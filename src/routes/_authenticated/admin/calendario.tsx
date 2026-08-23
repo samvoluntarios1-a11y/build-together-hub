@@ -417,7 +417,7 @@ function CalendarioPage() {
             ))}
           </div>
           
-          <div className="grid grid-cols-7 auto-rows-[minmax(120px,1fr)] bg-slate-200 gap-[1px]">
+          <div className={`grid grid-cols-7 bg-slate-200 gap-[1px] ${viewMode === 'month' ? 'auto-rows-[minmax(120px,1fr)]' : 'min-h-full'}`}>
             {days.map((day, i) => {
               const dateStr = format(day, "yyyy-MM-dd");
               const isCurrentMonth = isSameMonth(day, monthStart);
