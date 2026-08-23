@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, parseISO, isWithinInterval, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { AssignmentModal } from "@/components/admin/AssignmentModal";
-import { downloadCSV, downloadExcel, printHtmlReport, reportHeader, reportFooter } from "@/lib/export";
+import { downloadCSV, downloadExcel, printHtmlReport, reportHeader, reportFooter, type ExportFilters } from "@/lib/export";
 import { updateAssignment, deleteAssignment } from "@/lib/calendar.functions";
 import { 
   DropdownMenu, 
