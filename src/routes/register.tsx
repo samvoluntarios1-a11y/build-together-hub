@@ -401,7 +401,7 @@ function RegisterPage() {
       });
     } catch (err: any) {
       console.error("DEBUG_REGISTER_ERROR:", {
-        table: "multiple (profiles, skills, availability, accommodation)",
+        table: "multiple",
         operation: "submit_transactional",
         message: err?.message,
         details: err?.details,
@@ -409,7 +409,7 @@ function RegisterPage() {
         code: err?.code,
       });
       toast.error("No pudimos enviar tu registro", {
-        description: `Error (${err?.code || 'unknown'}): ${err?.message || 'Revisá tu conexión e intentá de nuevo.'}`,
+        description: "Revisá tu conexión e intentá de nuevo. Tus datos siguen guardados.",
       });
     } finally {
       setSubmitting(false);
