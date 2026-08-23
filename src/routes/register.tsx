@@ -19,6 +19,7 @@ import {
   Save,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { submitRegistration } from "@/lib/registration.functions";
 import { AvailabilityCalendar } from "@/components/register/AvailabilityCalendar";
 import { CategoryIcon } from "@/lib/icons";
 import {
@@ -326,68 +327,37 @@ function RegisterPage() {
     }
     setSubmitting(true);
     try {
-      const available = await checkNumber(draft.volunteer_number);
-      if (!available) {
-        setStep(0);
-        setErrors({
-          volunteer_number:
-            "Este número ya está registrado, por favor verificá tu número",
-        });
-        return;
-      }
-
-      const volunteerId = crypto.randomUUID();
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: volunteerId,
-        volunteer_number: draft.volunteer_number.trim(),
-        full_name: draft.full_name.trim(),
-        locality: draft.locality.trim(),
-      });
-      if (profileError) {
-        if (profileError.code === "23505") {
-          setStep(0);
-          setErrors({
-            volunteer_number:
-              "Este número ya está registrado, por favor verificá tu número",
-          });
-          return;
-        }
-        throw profileError;
-      }
-
-      if (draft.skills.length > 0) {
-        const { error } = await supabase.from("volunteer_skills").insert(
-          draft.skills.map((s) => ({
-            volunteer_id: volunteerId,
-            category_id: s.category_id,
-            skill_level: s.skill_level,
-            years_experience: s.years_experience,
-            description: s.description.trim() || null,
-          })),
-        );
-        if (error) throw error;
-      }
-
-      for (let i = 0; i < draft.dates.length; i += 400) {
-        const chunk = draft.dates.slice(i, i + 400).map((d) => ({
-          volunteer_id: volunteerId,
-          available_date: d,
-          is_available: true,
-        }));
-        const { error } = await supabase.from("availability").insert(chunk);
-        if (error) throw error;
-      }
-
-      if (draft.needs_accommodation) {
-        const { error } = await supabase.from("accommodation_requests").insert({
-          volunteer_id: volunteerId,
-          needs_accommodation: true,
-          locality_origin: draft.locality_origin.trim(),
+      const result = await submitRegistration({
+        data: {
+          volunteer_number: draft.volunteer_number,
+          full_name: draft.full_name,
+          locality: draft.locality,
+          skills: draft.skills,
+          dates: draft.dates,
+          needs_accommodation: draft.needs_accommodation,
+          locality_origin: draft.locality_origin,
           dates_needed_start: draft.dates_needed_start,
           dates_needed_end: draft.dates_needed_end,
-          special_requirements: draft.special_requirements.trim() || null,
-        });
-        if (error) throw error;
+          special_requirements: draft.special_requirements,
+        }
+      });
+
+      if (!result.success) {
+        if (result.code === "DUPLICATE_NUMBER") {
+          setStep(0);
+          setErrors({
+            volunteer_number: "Este número ya está registrado, por favor verificá tu número",
+          });
+          toast.error("Número duplicado", {
+            description: "El número de voluntario ingresado ya existe en el sistema.",
+          });
+        } else {
+          console.error("REGISTRATION_SUBMIT_ERROR:", result);
+          toast.error("Error al enviar el registro", {
+            description: result.error || "Ocurrió un error inesperado. Tus datos siguen guardados.",
+          });
+        }
+        return;
       }
 
       localStorage.removeItem(DRAFT_KEY);
@@ -400,16 +370,9 @@ function RegisterPage() {
         } as SuccessSearch,
       });
     } catch (err: any) {
-      console.error("DEBUG_REGISTER_ERROR:", {
-        table: "multiple",
-        operation: "submit_transactional",
-        message: err?.message,
-        details: err?.details,
-        hint: err?.hint,
-        code: err?.code,
-      });
-      toast.error("No pudimos enviar tu registro", {
-        description: "Revisá tu conexión e intentá de nuevo. Tus datos siguen guardados.",
+      console.error("DEBUG_REGISTER_FATAL_ERROR:", err);
+      toast.error("Error de conexión", {
+        description: "No pudimos conectar con el servidor. Revisá tu conexión e intentá de nuevo.",
       });
     } finally {
       setSubmitting(false);
