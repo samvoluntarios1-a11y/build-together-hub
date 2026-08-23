@@ -396,15 +396,14 @@ function CalendarioPage() {
 
           <div className="flex-1"></div>
 
-          <label className="flex items-center gap-2 cursor-pointer group">
+          <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setShowAvailability(!showAvailability)}>
             <span className="text-[10px] font-black uppercase text-slate-500 group-hover:text-navy transition">Mostrar Disponibilidad</span>
             <div 
               className={`w-8 h-4 rounded-full relative transition-colors ${showAvailability ? 'bg-success' : 'bg-slate-200'}`}
-              onClick={() => setShowAvailability(!showAvailability)}
             >
               <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${showAvailability ? 'left-4.5' : 'left-0.5'}`}></div>
             </div>
-          </label>
+          </div>
         </div>
 
         {/* Calendar Grid */}
