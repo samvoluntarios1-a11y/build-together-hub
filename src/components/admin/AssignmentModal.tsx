@@ -58,9 +58,11 @@ export function AssignmentModal({
   const { data: recommendations, isLoading } = useQuery({
     queryKey: ["recommendations", dateStr, categoryId, searchTerm],
     queryFn: () => getAssignmentRecommendations({ 
-      date: dateStr, 
-      categoryId, 
-      searchTerm 
+      data: {
+        date: dateStr, 
+        categoryId, 
+        searchTerm 
+      }
     }),
     enabled: !!categoryId && isOpen
   });
