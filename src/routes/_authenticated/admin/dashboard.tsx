@@ -121,9 +121,9 @@ function AdminDashboard() {
       v.volunteer_number,
       v.full_name,
       v.locality,
-      v.volunteer_skills.map(s => s.work_categories?.name).join(", "),
-      v.availability.length,
-      v.accommodation_requests[0]?.needs_accommodation ? "Sí" : "No"
+      v.volunteer_skills?.map(s => s.work_categories?.name).filter(Boolean).join(", ") || "",
+      v.availability?.length || 0,
+      v.accommodation_requests?.[0]?.needs_accommodation ? "Sí" : "No"
     ]);
     downloadCSV("voluntarios.csv", headers, rows);
     toast.success("CSV exportado correctamente");
@@ -135,9 +135,9 @@ function AdminDashboard() {
       v.volunteer_number,
       v.full_name,
       v.locality,
-      v.volunteer_skills.map(s => s.work_categories?.name).join(", "),
-      v.availability.length,
-      v.accommodation_requests[0]?.needs_accommodation ? "Sí" : "No"
+      v.volunteer_skills?.map(s => s.work_categories?.name).filter(Boolean).join(", ") || "",
+      v.availability?.length || 0,
+      v.accommodation_requests?.[0]?.needs_accommodation ? "Sí" : "No"
     ]);
     downloadExcel("voluntarios.xlsx", [
       {
@@ -298,7 +298,7 @@ function AdminDashboard() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1.5">
-                        {v.volunteer_skills.map((s) => (
+                        {v.volunteer_skills?.map((s) => (
                           <div 
                             key={s.id} 
                             className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold"
@@ -313,11 +313,11 @@ function AdminDashboard() {
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700">
                         <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                        {v.availability.length} días
+                        {v.availability?.length || 0} días
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {v.accommodation_requests[0]?.needs_accommodation ? (
+                      {v.accommodation_requests?.[0]?.needs_accommodation ? (
                         <div className="flex items-center gap-1.5">
                           {v.accommodation_requests[0].is_fulfilled ? (
                             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-success/20 text-success">
