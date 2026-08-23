@@ -80,7 +80,7 @@ function LoginPage() {
       }
       localStorage.removeItem(ATTEMPTS_KEY);
       toast.success("¡Bienvenido!");
-      navigate({ to: "/admin/dashboard" });
+      navigate({ to: "/admin/dashboard" as any });
     } finally {
       setLoading(false);
     }
