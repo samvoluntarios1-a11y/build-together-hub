@@ -70,7 +70,7 @@ export const submitRegistration = createServerFn({ method: "POST" })
         if (skillsError) throw skillsError;
       }
 
-      // 4. Insertar Disponibilidad (en chunks si es necesario, aunque aquí lo hacemos directo con admin)
+      // 4. Insertar Disponibilidad
       const { error: availError } = await supabaseAdmin
         .from("availability")
         .insert(data.dates.map(d => ({
@@ -87,9 +87,9 @@ export const submitRegistration = createServerFn({ method: "POST" })
           .insert({
             volunteer_id: volunteerId,
             needs_accommodation: true,
-            locality_origin: data.locality_origin?.trim(),
-            dates_needed_start: data.dates_needed_start,
-            dates_needed_end: data.dates_needed_end,
+            locality_origin: data.locality_origin?.trim() || null,
+            dates_needed_start: data.dates_needed_start || null,
+            dates_needed_end: data.dates_needed_end || null,
             special_requirements: data.special_requirements?.trim() || null,
           });
         if (accError) throw accError;
