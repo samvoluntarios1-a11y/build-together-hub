@@ -15,10 +15,14 @@ export const Route = createFileRoute("/_authenticated")({
     }
 
     // Verificar rol staff
-    const { data: roles } = await supabase
+    const { data: roles, error: rolesError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", session.user.id);
+      
+    if (rolesError) {
+      console.error("Error fetching roles:", rolesError);
+    }
       
     const isStaff = (roles ?? []).some((r) =>
       ["admin", "coordinator"].includes(r.role)

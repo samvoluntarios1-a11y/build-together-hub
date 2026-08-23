@@ -63,13 +63,24 @@ function LoginPage() {
         return;
       }
       // Verificar que tenga rol de staff
-      const { data: roles } = await supabase
+      const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", data.user.id);
+
+      if (rolesError) {
+        console.error("Error al obtener roles:", rolesError);
+        toast.error("Error de permisos", {
+          description: "No se pudieron verificar tus permisos. Contactá a soporte.",
+        });
+        await supabase.auth.signOut();
+        return;
+      }
+      
       const isStaff = (roles ?? []).some((r) =>
         ["admin", "coordinator"].includes(r.role),
       );
+      
       if (!isStaff) {
         await supabase.auth.signOut();
         toast.error("Sin permisos de administración", {
