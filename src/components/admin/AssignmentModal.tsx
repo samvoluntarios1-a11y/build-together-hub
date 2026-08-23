@@ -69,13 +69,15 @@ export function AssignmentModal({
 
   const mutation = useMutation({
     mutationFn: (volunteerIds: string[]) => createBulkAssignments({
-      assignments: volunteerIds.map(id => ({
-        volunteer_id: id,
-        category_id: categoryId,
-        assignment_date: dateStr,
-        notes,
-        status: "assigned"
-      }))
+      data: {
+        assignments: volunteerIds.map(id => ({
+          volunteer_id: id,
+          category_id: categoryId,
+          assignment_date: dateStr,
+          notes,
+          status: "assigned" as const
+        }))
+      }
     }),
     onSuccess: (data) => {
       if (data.successCount > 0) {
