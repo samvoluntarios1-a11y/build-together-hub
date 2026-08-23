@@ -34,6 +34,8 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { ExportModal } from "@/components/admin/ExportModal";
+
 
 export const Route = createFileRoute("/_authenticated/admin/calendario")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -278,11 +280,14 @@ function CalendarioPage() {
       // Group by date, then category
       const byDate: Record<string, Record<string, AssignmentRow[]>> = {};
       filteredData.forEach(a => {
-        if (!byDate[a.assignment_date]) byDate[a.assignment_date] = {};
+        const dateKey = a.assignment_date;
+        if (!byDate[dateKey]) byDate[dateKey] = {};
         const catName = a.work_categories?.name || "Sin categoría";
-        if (!byDate[a.assignment_date][catName]) byDate[a.assignment_date][catName] = [];
-        byDate[a.assignment_date][catName].push(a);
+        const catMap = byDate[dateKey];
+        if (!catMap[catName]) catMap[catName] = [];
+        catMap[catName].push(a);
       });
+
 
       const sortedDates = Object.keys(byDate).sort();
 
