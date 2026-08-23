@@ -21,7 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CategoryIcon } from "@/lib/icons";
 import { STATUS_LABELS, type AssignmentRow, type WorkCategory, type AssignmentStatus } from "@/lib/types";
 import { toast } from "sonner";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, parseISO, isWithinInterval } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, parseISO, isWithinInterval, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { AssignmentModal } from "@/components/admin/AssignmentModal";
 import { downloadCSV, downloadExcel, printHtmlReport, reportHeader, reportFooter } from "@/lib/export";
