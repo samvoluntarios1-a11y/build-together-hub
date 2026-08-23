@@ -369,9 +369,8 @@ function CalendarioPage() {
             <ExportModal 
               isOpen={isExporting}
               onClose={() => setIsExporting(false)}
-              onConfirm={(period: { type: string; from?: string; to?: string }) => {
-                handleExport(period, 'excel');
-              }}
+              onConfirm={(period) => handleExport(period, 'excel')}
+
 
             />
 
