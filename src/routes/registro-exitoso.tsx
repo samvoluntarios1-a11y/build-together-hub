@@ -16,7 +16,7 @@ export const Route = createFileRoute("/registro-exitoso")({
   }),
   head: () => ({
     meta: [
-      { title: "¡Registro exitoso! — Voluntarios LDC" },
+      { title: "Voluntarios LDC" },
       { name: "robots", content: "noindex" },
     ],
   }),
