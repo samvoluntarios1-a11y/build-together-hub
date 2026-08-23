@@ -298,14 +298,14 @@ function AdminDashboard() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1.5">
-                        {v.volunteer_skills?.map((s) => (
+                        {Array.isArray(v.volunteer_skills) && v.volunteer_skills.map((s) => (
                           <div 
                             key={s.id} 
                             className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold"
-                            style={{ color: s.work_categories?.color || 'inherit' }}
+                            style={{ color: s?.work_categories?.color || 'inherit' }}
                           >
-                            <CategoryIcon name={s.work_categories?.icon || 'hard-hat'} className="h-3 w-3" />
-                            {s.work_categories?.name}
+                            <CategoryIcon name={(s?.work_categories?.icon as any) || 'hard-hat'} className="h-3 w-3" />
+                            {s?.work_categories?.name}
                           </div>
                         ))}
                       </div>
@@ -317,7 +317,7 @@ function AdminDashboard() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {v.accommodation_requests?.[0]?.needs_accommodation ? (
+                      {Array.isArray(v.accommodation_requests) && v.accommodation_requests?.[0]?.needs_accommodation ? (
                         <div className="flex items-center gap-1.5">
                           {v.accommodation_requests[0].is_fulfilled ? (
                             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-success/20 text-success">
