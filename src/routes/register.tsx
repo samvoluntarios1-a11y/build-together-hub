@@ -96,7 +96,7 @@ const EMPTY_DRAFT: Draft = {
 const DRAFT_KEY = "voluntarios-ldc-draft-v1";
 const STEPS = [
   { label: "Datos", icon: User },
-  { label: "Habilidades", icon: Wrench },
+  { label: "Habilidades", icon: AppLogo },
   { label: "Disponibilidad", icon: CalendarDays },
   { label: "Alojamiento", icon: BedDouble },
   { label: "Revisión", icon: ClipboardCheck },
