@@ -51,10 +51,10 @@ function CategoriasPage() {
       const { data, error } = await supabase
         .from("work_categories")
         .upsert(cat as any)
-        .select()
-        .single();
+        .select();
+      
       if (error) throw error;
-      return data;
+      return data && data.length > 0 ? data[0] : null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["work-categories-admin-full"] });
