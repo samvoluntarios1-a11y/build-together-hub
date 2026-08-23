@@ -5,24 +5,28 @@ import {
   HardHat, 
   Calendar, 
   BedDouble, 
-  ArrowRight,
-  Filter,
-  Search,
   Download,
   MoreVertical,
   CheckCircle2,
   Clock,
-  XCircle,
   ChevronLeft,
   ChevronRight,
-  UserPlus
+  UserPlus,
+  Eye,
+  Search,
+  CalendarDays,
+  X,
+  ArrowRight
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryIcon } from "@/lib/icons";
 import { SKILL_LEVEL_LABELS, STATUS_LABELS, type VolunteerRow, type AssignmentStatus } from "@/lib/types";
 import { downloadCSV, downloadExcel } from "@/lib/export";
 import { toast } from "sonner";
+import { VolunteerProfileModal } from "@/components/admin/VolunteerProfileModal";
 
 export const Route = createFileRoute("/_authenticated/admin/dashboard")({
   component: AdminDashboard,
@@ -36,9 +40,21 @@ function AdminDashboard() {
   const [localityFilter, setLocalityFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   
+  // New date filters
+  const [dateFilterMode, setDateFilterMode] = useState<"none" | "day" | "range" | "week" | "month">("none");
+  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+  const [dateRange, setDateRange] = useState<{from: string, to: string}>({
+    from: format(new Date(), "yyyy-MM-dd"),
+    to: format(addDays(new Date(), 7), "yyyy-MM-dd")
+  });
+
+  // Modal state
+  const [selectedVolunteer, setSelectedVolunteer] = useState<VolunteerRow | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   // Fetch volunteers with skills and availability
   const { data: volunteersData, isLoading } = useQuery({
-    queryKey: ["volunteers", page, searchTerm, localityFilter, categoryFilter],
+    queryKey: ["volunteers", page, searchTerm, localityFilter, categoryFilter, dateFilterMode, selectedDate, dateRange],
     queryFn: async () => {
       let query = supabase
         .from("profiles")
@@ -52,14 +68,21 @@ function AdminDashboard() {
             description,
             work_categories (id, name, color, icon)
           ),
-          availability (available_date),
+          availability!inner (available_date, is_available),
           accommodation_requests (
             id,
             needs_accommodation,
             is_fulfilled,
             locality_origin,
             dates_needed_start,
-            dates_needed_end
+            dates_needed_end,
+            special_requirements
+          ),
+          calendar_assignments (
+            id,
+            assignment_date,
+            status,
+            work_categories (name, color, icon)
           )
         `, { count: "exact" });
 
@@ -70,18 +93,59 @@ function AdminDashboard() {
         query = query.ilike("locality", `%${localityFilter}%`);
       }
       
-      // Filter by skill category if selected
+      // Filter by skill category
       if (categoryFilter) {
-        // This is a bit complex in Supabase direct filtering, often easier to fetch and filter or use a specific RPC
-        // For now we'll handle basic profile filtering and could improve this with a view or RPC
+        query = query.eq("volunteer_skills.category_id", categoryFilter);
+      }
+
+      // Date filtering based on availability
+      query = query.eq("availability.is_available", true);
+
+      if (dateFilterMode === "day") {
+        query = query.eq("availability.available_date", selectedDate);
+      } else if (dateFilterMode === "range") {
+        query = query.gte("availability.available_date", dateRange.from)
+                     .lte("availability.available_date", dateRange.to);
+      } else if (dateFilterMode === "week") {
+        const start = startOfWeek(parseISO(selectedDate), { weekStartsOn: 1 });
+        const end = endOfWeek(parseISO(selectedDate), { weekStartsOn: 1 });
+        query = query.gte("availability.available_date", format(start, "yyyy-MM-dd"))
+                     .lte("availability.available_date", format(end, "yyyy-MM-dd"));
+      } else if (dateFilterMode === "month") {
+        const start = startOfMonth(parseISO(selectedDate));
+        const end = endOfMonth(parseISO(selectedDate));
+        query = query.gte("availability.available_date", format(start, "yyyy-MM-dd"))
+                     .lte("availability.available_date", format(end, "yyyy-MM-dd"));
       }
 
       const { data, error, count } = await query
-        .order("created_at", { ascending: false })
-        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return { volunteers: data as unknown as VolunteerRow[], total: count ?? 0 };
+
+      let processedData = data as unknown as VolunteerRow[];
+
+      // Clientside sorting by skill level if category filter is active
+      if (categoryFilter) {
+        const levelWeight = { primaria: 3, secundaria: 2, basica: 1 };
+        processedData.sort((a, b) => {
+          const skillA = a.volunteer_skills.find(s => s.category_id === categoryFilter);
+          const skillB = b.volunteer_skills.find(s => s.category_id === categoryFilter);
+          
+          if (!skillA || !skillB) return 0;
+          
+          if (skillA.skill_level !== skillB.skill_level) {
+            return levelWeight[skillB.skill_level] - levelWeight[skillA.skill_level];
+          }
+          return skillB.years_experience - skillA.years_experience;
+        });
+      }
+
+      // Manual pagination because of complex joins/filtering
+      const total = processedData.length;
+      const paginatedData = processedData.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+      return { volunteers: paginatedData, total };
     }
   });
 
@@ -91,7 +155,18 @@ function AdminDashboard() {
     queryFn: async () => {
       const { count: total } = await supabase.from("profiles").select("*", { count: "exact", head: true });
       const { count: accommodation } = await supabase.from("accommodation_requests").select("*", { count: "exact", head: true }).eq("is_fulfilled", false);
-      const { count: assignments } = await supabase.from("calendar_assignments").select("*", { count: "exact", head: true }).gte("assignment_date", new Date().toISOString().split('T')[0]);
+      
+      // Calculate upcoming assignments (next 30 days)
+      const today = new Date().toISOString().split('T')[0];
+      const nextMonth = new Date();
+      nextMonth.setDate(nextMonth.getDate() + 30);
+      const nextMonthStr = nextMonth.toISOString().split('T')[0];
+      
+      const { count: assignments } = await supabase
+        .from("calendar_assignments")
+        .select("*", { count: "exact", head: true })
+        .gte("assignment_date", today)
+        .lte("assignment_date", nextMonthStr);
       
       return {
         total: total ?? 0,
@@ -212,7 +287,7 @@ function AdminDashboard() {
       </div>
 
       {/* Filters */}
-      <div className="card-soft p-5">
+      <div className="card-soft p-5 space-y-4">
         <div className="flex flex-wrap items-end gap-4">
           <div className="flex-1 min-w-[200px]">
             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Buscar por nombre</label>
@@ -251,11 +326,87 @@ function AdminDashboard() {
             </select>
           </div>
           <button 
-            onClick={() => { setSearchTerm(""); setLocalityFilter(""); setCategoryFilter(""); setPage(0); }}
+            onClick={() => { 
+              setSearchTerm(""); 
+              setLocalityFilter(""); 
+              setCategoryFilter(""); 
+              setDateFilterMode("none");
+              setPage(0); 
+            }}
             className="btn-outline h-10 px-4 text-xs"
           >
             Limpiar
           </button>
+        </div>
+
+        <div className="pt-4 border-t border-slate-100">
+          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+            <CalendarDays className="h-4 w-4" /> Filtrar por Disponibilidad
+          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex bg-slate-100 p-0.5 rounded-lg">
+              {[
+                { id: "none", label: "Cualquiera" },
+                { id: "day", label: "Día" },
+                { id: "range", label: "Rango" },
+                { id: "week", label: "Semana" },
+                { id: "month", label: "Mes" }
+              ].map((mode) => (
+                <button
+                  key={mode.id}
+                  onClick={() => { setDateFilterMode(mode.id as any); setPage(0); }}
+                  className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition ${dateFilterMode === mode.id ? "bg-white shadow-sm text-primary" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+
+            {dateFilterMode === "day" && (
+              <input 
+                type="date" 
+                className="input-field h-8 text-xs w-40"
+                value={selectedDate}
+                onChange={(e) => { setSelectedDate(e.target.value); setPage(0); }}
+              />
+            )}
+
+            {dateFilterMode === "range" && (
+              <div className="flex items-center gap-2">
+                <input 
+                  type="date" 
+                  className="input-field h-8 text-xs w-36"
+                  value={dateRange.from}
+                  onChange={(e) => { setDateRange(prev => ({ ...prev, from: e.target.value })); setPage(0); }}
+                />
+                <span className="text-slate-400 text-xs">-</span>
+                <input 
+                  type="date" 
+                  className="input-field h-8 text-xs w-36"
+                  value={dateRange.to}
+                  onChange={(e) => { setDateRange(prev => ({ ...prev, to: e.target.value })); setPage(0); }}
+                />
+              </div>
+            )}
+
+            {(dateFilterMode === "week" || dateFilterMode === "month") && (
+              <input 
+                type="date" 
+                className="input-field h-8 text-xs w-40"
+                value={selectedDate}
+                onChange={(e) => { setSelectedDate(e.target.value); setPage(0); }}
+              />
+            )}
+            
+            {dateFilterMode !== "none" && (
+              <button 
+                onClick={() => setDateFilterMode("none")}
+                className="text-slate-400 hover:text-red-500 transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -311,10 +462,24 @@ function AdminDashboard() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700">
-                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                        {v.availability?.length || 0} días
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                          {v.availability?.length || 0} días
+                        </span>
+                        {dateFilterMode !== "none" && v.availability && (
+                          <div className="flex flex-wrap gap-1 max-w-[150px]">
+                            {v.availability.slice(0, 3).map((a, idx) => (
+                              <span key={idx} className="text-[9px] bg-success/10 text-success px-1 rounded font-bold">
+                                {format(parseISO(a.available_date), "dd/MM")}
+                              </span>
+                            ))}
+                            {v.availability.length > 3 && (
+                              <span className="text-[9px] text-slate-400">+{v.availability.length - 3}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       {Array.isArray(v.accommodation_requests) && v.accommodation_requests?.[0]?.needs_accommodation ? (
@@ -336,10 +501,17 @@ function AdminDashboard() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
+                        <button 
+                          onClick={() => { setSelectedVolunteer(v); setIsModalOpen(true); }}
+                          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-primary transition"
+                          title="Ver Perfil"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
                         <Link 
                           to="/admin/calendario" 
                           search={{ volunteer: v.id } as any}
-                          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-primary transition"
+                          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-success transition"
                           title="Asignar"
                         >
                           <UserPlus className="h-4 w-4" />
@@ -381,6 +553,12 @@ function AdminDashboard() {
           </div>
         )}
       </div>
+
+      <VolunteerProfileModal 
+        volunteer={selectedVolunteer}
+        isOpen={isModalOpen}
+        onClose={() => { setIsModalOpen(false); setSelectedVolunteer(null); }}
+      />
     </div>
   );
 }
