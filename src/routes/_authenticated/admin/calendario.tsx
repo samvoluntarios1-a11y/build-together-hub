@@ -168,17 +168,6 @@ function CalendarioPage() {
   });
 
   // Calendar logic
-  const days = useMemo(() => {
-    if (viewMode === "month") {
-      const start = startOfWeek(monthStart, { weekStartsOn: 1 });
-      const end = endOfWeek(monthEnd, { weekStartsOn: 1 });
-      return eachDayOfInterval({ start, end });
-    } else {
-      const start = startOfWeek(currentDate, { weekStartsOn: 1 });
-      const end = endOfWeek(currentDate, { weekStartsOn: 1 });
-      return eachDayOfInterval({ start, end });
-    }
-  }, [monthStart, monthEnd, currentDate, viewMode]);
 
   const assignmentsByDay = useMemo(() => {
     const map = new Map<string, AssignmentRow[]>();
