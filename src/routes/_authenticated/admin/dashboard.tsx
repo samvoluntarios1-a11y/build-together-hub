@@ -54,7 +54,7 @@ function AdminDashboard() {
   
   // Fetch volunteers with skills and availability
   const { data: volunteersData, isLoading } = useQuery({
-    queryKey: ["volunteers", page, searchTerm, localityFilter, categoryFilter],
+    queryKey: ["volunteers", page, searchTerm, localityFilter, categoryFilter, dateFilterMode, selectedDate, dateRange],
     queryFn: async () => {
       let query = supabase
         .from("profiles")
@@ -68,14 +68,21 @@ function AdminDashboard() {
             description,
             work_categories (id, name, color, icon)
           ),
-          availability (available_date),
+          availability!inner (available_date, is_available),
           accommodation_requests (
             id,
             needs_accommodation,
             is_fulfilled,
             locality_origin,
             dates_needed_start,
-            dates_needed_end
+            dates_needed_end,
+            special_requirements
+          ),
+          calendar_assignments (
+            id,
+            assignment_date,
+            status,
+            work_categories (name, color, icon)
           )
         `, { count: "exact" });
 
@@ -86,18 +93,59 @@ function AdminDashboard() {
         query = query.ilike("locality", `%${localityFilter}%`);
       }
       
-      // Filter by skill category if selected
+      // Filter by skill category
       if (categoryFilter) {
-        // This is a bit complex in Supabase direct filtering, often easier to fetch and filter or use a specific RPC
-        // For now we'll handle basic profile filtering and could improve this with a view or RPC
+        query = query.eq("volunteer_skills.category_id", categoryFilter);
+      }
+
+      // Date filtering based on availability
+      query = query.eq("availability.is_available", true);
+
+      if (dateFilterMode === "day") {
+        query = query.eq("availability.available_date", selectedDate);
+      } else if (dateFilterMode === "range") {
+        query = query.gte("availability.available_date", dateRange.from)
+                     .lte("availability.available_date", dateRange.to);
+      } else if (dateFilterMode === "week") {
+        const start = startOfWeek(parseISO(selectedDate), { weekStartsOn: 1 });
+        const end = endOfWeek(parseISO(selectedDate), { weekStartsOn: 1 });
+        query = query.gte("availability.available_date", format(start, "yyyy-MM-dd"))
+                     .lte("availability.available_date", format(end, "yyyy-MM-dd"));
+      } else if (dateFilterMode === "month") {
+        const start = startOfMonth(parseISO(selectedDate));
+        const end = endOfMonth(parseISO(selectedDate));
+        query = query.gte("availability.available_date", format(start, "yyyy-MM-dd"))
+                     .lte("availability.available_date", format(end, "yyyy-MM-dd"));
       }
 
       const { data, error, count } = await query
-        .order("created_at", { ascending: false })
-        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return { volunteers: data as unknown as VolunteerRow[], total: count ?? 0 };
+
+      let processedData = data as unknown as VolunteerRow[];
+
+      // Clientside sorting by skill level if category filter is active
+      if (categoryFilter) {
+        const levelWeight = { primaria: 3, secundaria: 2, basica: 1 };
+        processedData.sort((a, b) => {
+          const skillA = a.volunteer_skills.find(s => s.category_id === categoryFilter);
+          const skillB = b.volunteer_skills.find(s => s.category_id === categoryFilter);
+          
+          if (!skillA || !skillB) return 0;
+          
+          if (skillA.skill_level !== skillB.skill_level) {
+            return levelWeight[skillB.skill_level] - levelWeight[skillA.skill_level];
+          }
+          return skillB.years_experience - skillA.years_experience;
+        });
+      }
+
+      // Manual pagination because of complex joins/filtering
+      const total = processedData.length;
+      const paginatedData = processedData.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+      return { volunteers: paginatedData, total };
     }
   });
 
