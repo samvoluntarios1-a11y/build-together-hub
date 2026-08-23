@@ -13,21 +13,24 @@ import {
   ChevronRight,
   Info,
   List,
-  LayoutGrid
+  LayoutGrid,
+  Trash2
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { format, parseISO, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { es } from "date-fns/locale";
 import { CategoryIcon } from "@/lib/icons";
 import { SKILL_LEVEL_LABELS, STATUS_LABELS, type VolunteerRow } from "@/lib/types";
+import { Button } from "@/components/ui/button";
 
 interface VolunteerProfileModalProps {
   volunteer: VolunteerRow | null;
   isOpen: boolean;
   onClose: () => void;
+  onDelete?: (volunteer: VolunteerRow) => void;
 }
 
-export function VolunteerProfileModal({ volunteer, isOpen, onClose }: VolunteerProfileModalProps) {
+export function VolunteerProfileModal({ volunteer, isOpen, onClose, onDelete }: VolunteerProfileModalProps) {
   const [availabilityView, setAvailabilityView] = useState<"calendar" | "list">("calendar");
 
   const availableDates = useMemo(() => {
@@ -63,10 +66,21 @@ export function VolunteerProfileModal({ volunteer, isOpen, onClose }: VolunteerP
             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
               <User className="h-6 w-6" />
             </div>
-            <div>
+            <div className="flex-1">
               <span>Perfil del Voluntario</span>
               <p className="text-sm font-normal text-slate-500 mt-1">#{volunteer.volunteer_number} · Registrado el {format(parseISO(volunteer.created_at), "dd/MM/yyyy")}</p>
             </div>
+            {onDelete && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-slate-400 hover:text-red-600 hover:bg-red-50"
+                onClick={() => onDelete(volunteer)}
+                title="Eliminar Voluntario"
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+            )}
           </DialogTitle>
         </DialogHeader>
 
