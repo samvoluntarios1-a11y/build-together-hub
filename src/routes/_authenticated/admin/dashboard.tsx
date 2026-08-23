@@ -528,6 +528,12 @@ function AdminDashboard() {
           </div>
         )}
       </div>
+
+      <VolunteerProfileModal 
+        volunteer={selectedVolunteer}
+        isOpen={isModalOpen}
+        onClose={() => { setIsModalOpen(false); setSelectedVolunteer(null); }}
+      />
     </div>
   );
 }
