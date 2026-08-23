@@ -13,7 +13,8 @@ import {
   Filter,
   Users,
   Search,
-  Plus
+  Plus,
+  BedDouble
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
