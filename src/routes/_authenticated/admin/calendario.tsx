@@ -571,7 +571,13 @@ function CalendarioPage() {
         
         {selectedDay && (
           <div className="p-4 border-t border-slate-200">
-            <button className="btn-navy w-full text-xs">
+            <button 
+              className="btn-navy w-full text-xs"
+              onClick={() => {
+                setPreselectedCategoryId("");
+                setIsAssigning(true);
+              }}
+            >
               <UserPlus className="h-4 w-4" />
               Asignar Voluntario a este día
             </button>
