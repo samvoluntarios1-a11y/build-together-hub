@@ -103,19 +103,180 @@ function CalendarioPage() {
     return eachDayOfInterval({ start, end });
   }, [monthStart, monthEnd]);
 
+  const { data: availabilitySummary } = useQuery({
+    queryKey: ["availability-summary", format(currentDate, "yyyy-MM"), viewMode],
+    queryFn: async () => {
+      const start = viewMode === "month" ? startOfWeek(monthStart, { weekStartsOn: 1 }) : startOfWeek(currentDate, { weekStartsOn: 1 });
+      const end = viewMode === "month" ? endOfWeek(monthEnd, { weekStartsOn: 1 }) : endOfWeek(currentDate, { weekStartsOn: 1 });
+
+      const { data, error } = await supabase
+        .from("availability")
+        .select(`
+          available_date,
+          volunteer_id,
+          profiles!inner (
+            volunteer_skills (category_id)
+          )
+        `)
+        .eq("is_available", true)
+        .gte("available_date", format(start, "yyyy-MM-dd"))
+        .lte("available_date", format(end, "yyyy-MM-dd"));
+      
+      if (error) throw error;
+
+      // Group by date and category
+      const counts: Record<string, Record<string, number>> = {};
+      data?.forEach((row: any) => {
+        const date = row.available_date;
+        if (!counts[date]) counts[date] = {};
+        
+        row.profiles.volunteer_skills.forEach((s: any) => {
+          counts[date][s.category_id] = (counts[date][s.category_id] || 0) + 1;
+        });
+      });
+      return counts;
+    },
+    enabled: showAvailability
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string, status: AssignmentStatus }) => updateAssignment({ data: { id, status } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      toast.success("Estado actualizado correctamente");
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteAssignment({ data: { id } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      toast.success("Asignación eliminada");
+    }
+  });
+
+  // Calendar logic
+  const days = useMemo(() => {
+    if (viewMode === "month") {
+      const start = startOfWeek(monthStart, { weekStartsOn: 1 });
+      const end = endOfWeek(monthEnd, { weekStartsOn: 1 });
+      return eachDayOfInterval({ start, end });
+    } else {
+      const start = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const end = endOfWeek(currentDate, { weekStartsOn: 1 });
+      return eachDayOfInterval({ start, end });
+    }
+  }, [monthStart, monthEnd, currentDate, viewMode]);
+
   const assignmentsByDay = useMemo(() => {
     const map = new Map<string, AssignmentRow[]>();
     assignments?.forEach(a => {
       const date = a.assignment_date;
+      
+      // Apply filters
+      if (filterCategories.length > 0 && !filterCategories.includes(a.category_id)) return;
+      if (filterLevel !== "all") {
+        const skill = a.profiles?.volunteer_skills?.find((s: any) => s.category_id === a.category_id);
+        if (skill?.skill_level !== filterLevel) return;
+      }
+
       if (!map.has(date)) map.set(date, []);
       map.get(date)!.push(a);
     });
     return map;
-  }, [assignments]);
+  }, [assignments, filterCategories, filterLevel]);
 
-  const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1));
-  const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
+  const handlePrev = () => {
+    if (viewMode === "month") setCurrentDate(subMonths(currentDate, 1));
+    else setCurrentDate(addDays(currentDate, -7));
+  };
+  const handleNext = () => {
+    if (viewMode === "month") setCurrentDate(addMonths(currentDate, 1));
+    else setCurrentDate(addDays(currentDate, 7));
+  };
   const handleToday = () => setCurrentDate(new Date());
+
+  const handleExportCSV = () => {
+    if (!assignments) return;
+    const headers = ["Fecha", "Categoría", "Voluntario", "Nivel", "Localidad", "Estado"];
+    const rows = assignments.map(a => [
+      a.assignment_date,
+      a.work_categories?.name || "",
+      a.profiles?.full_name || "",
+      a.profiles?.volunteer_skills?.find((s: any) => s.category_id === a.category_id)?.skill_level || "",
+      a.profiles?.locality || "",
+      STATUS_LABELS[a.status] || a.status
+    ]);
+    downloadCSV(`asignaciones-${format(currentDate, "yyyy-MM")}.csv`, headers, rows);
+  };
+
+  const handleExportExcel = () => {
+    if (!assignments) return;
+    const rows = assignments.map(a => [
+      a.assignment_date,
+      a.work_categories?.name || "",
+      a.profiles?.full_name || "",
+      a.profiles?.volunteer_skills?.find((s: any) => s.category_id === a.category_id)?.skill_level || "",
+      a.profiles?.locality || "",
+      STATUS_LABELS[a.status] || a.status
+    ]);
+    downloadExcel(`asignaciones-${format(currentDate, "yyyy-MM")}.xlsx`, [{
+      name: "Asignaciones",
+      headers: ["Fecha", "Categoría", "Voluntario", "Nivel", "Localidad", "Estado"],
+      rows
+    }]);
+  };
+
+  const handlePrintPDF = () => {
+    const title = `Reporte de Asignaciones - ${format(currentDate, "MMMM yyyy", { locale: es })}`;
+    let html = reportHeader(title, viewMode === "month" ? "Vista Mensual" : "Vista Semanal");
+    
+    const sortedDays = [...days].sort((a, b) => a.getTime() - b.getTime());
+    
+    sortedDays.forEach(day => {
+      const dateStr = format(day, "yyyy-MM-dd");
+      const dayAssignments = assignmentsByDay.get(dateStr) || [];
+      if (dayAssignments.length === 0) return;
+
+      html += `<h2 class="day">${format(day, "EEEE dd 'de' MMMM", { locale: es })}</h2>`;
+      
+      const byCat: Record<string, AssignmentRow[]> = {};
+      dayAssignments.forEach(a => {
+        const catName = a.work_categories?.name || "Sin categoría";
+        if (!byCat[catName]) byCat[catName] = [];
+        byCat[catName].push(a);
+      });
+
+      Object.entries(byCat).forEach(([catName, list]) => {
+        html += `<h3 class="cat">${catName}</h3>`;
+        html += `<table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>N°</th>
+              <th>Nivel</th>
+              <th>Localidad</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(a => `
+              <tr>
+                <td>${a.profiles?.full_name}</td>
+                <td>${a.profiles?.volunteer_number}</td>
+                <td>${a.profiles?.volunteer_skills?.find((s: any) => s.category_id === a.category_id)?.skill_level || '-'}</td>
+                <td>${a.profiles?.locality}</td>
+                <td>${STATUS_LABELS[a.status]}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`;
+      });
+    });
+
+    html += reportFooter();
+    printHtmlReport(title, html);
+  };
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col bg-slate-50 md:flex-row overflow-hidden">
