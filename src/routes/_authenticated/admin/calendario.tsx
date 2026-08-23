@@ -295,7 +295,9 @@ function CalendarioPage() {
         const date = parseISO(dateStr);
         html += `<h2 class="day">${format(date, "EEEE dd 'de' MMMM", { locale: es })}</h2>`;
         
-        Object.entries(byDate[dateStr]).forEach(([catName, list]) => {
+        const dayCategories = byDate[dateStr] || {};
+        Object.entries(dayCategories).forEach(([catName, list]) => {
+
           html += `<h3 class="cat">${catName}</h3>`;
           html += `<table>
             <thead>
