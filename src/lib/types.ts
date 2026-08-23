@@ -6,6 +6,13 @@ export type AssignmentStatus =
   | "cancelled"
   | "completed";
 
+export const STATUS_LABELS: Record<AssignmentStatus, string> = {
+  assigned: "Asignado",
+  confirmed: "Confirmado",
+  completed: "Completado",
+  cancelled: "Cancelado"
+};
+
 export interface WorkCategory {
   id: string;
   name: string;
@@ -67,6 +74,7 @@ export interface AssignmentRow {
     volunteer_number: string;
     locality: string;
     accommodation_requests?: AccommodationEmbed[];
+    volunteer_skills?: SkillEmbed[];
   } | null;
   work_categories?: { name: string; color: string; icon: string } | null;
 }
@@ -77,12 +85,6 @@ export const SKILL_LEVEL_LABELS: Record<SkillLevel, string> = {
   basica: "Básica",
 };
 
-export const STATUS_LABELS: Record<AssignmentStatus, string> = {
-  assigned: "Asignado",
-  confirmed: "Confirmado",
-  cancelled: "Cancelado",
-  completed: "Completado",
-};
 
 export const MAX_SKILLS = 3;
 export const PROJECT_MONTHS = 18;
