@@ -558,7 +558,15 @@ function CalendarioPage() {
               <div className="py-12 text-center text-slate-400 space-y-3">
                 <CalendarIcon className="mx-auto h-8 w-8 opacity-20" />
                 <p className="text-sm">No hay voluntarios asignados para este día.</p>
-                <button className="btn-outline h-8 px-3 text-xs">Asignar voluntario</button>
+                <button 
+                  className="btn-outline h-8 px-3 text-xs"
+                  onClick={() => {
+                    setPreselectedCategoryId("");
+                    setIsAssigning(true);
+                  }}
+                >
+                  Asignar voluntario
+                </button>
               </div>
             )
           ) : (
