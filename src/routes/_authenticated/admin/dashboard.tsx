@@ -76,7 +76,7 @@ function AdminDashboard() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return deleteVolunteer({ id });
+      return deleteVolunteer({ data: { id } });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["volunteers"] });
