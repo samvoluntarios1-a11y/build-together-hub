@@ -15,10 +15,13 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { downloadExcel, printHtmlReport, reportHeader, reportFooter } from "@/lib/export";
+import { downloadCSV, downloadExcel, printHtmlReport, reportHeader, reportFooter, type ExportFilters } from "@/lib/export";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
+import { ExportModal } from "@/components/admin/ExportModal";
+import { STATUS_LABELS, type AssignmentRow } from "@/lib/types";
+
 
 export const Route = createFileRoute("/_authenticated/admin/reportes")({
   component: ReportesPage,
@@ -26,6 +29,8 @@ export const Route = createFileRoute("/_authenticated/admin/reportes")({
 
 function ReportesPage() {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
 
   // Stats for the report preview
   const { data: stats } = useQuery({
@@ -139,6 +144,120 @@ function ReportesPage() {
     }
   };
 
+  const handleExport = async (period: { type: string; from?: string; to?: string }, formatType: 'csv' | 'excel' | 'pdf') => {
+    setIsGenerating(true);
+    try {
+      let start: Date;
+      let end: Date;
+
+      if (period.type === "current_week") {
+        start = startOfWeek(new Date(), { weekStartsOn: 1 });
+        end = endOfWeek(new Date(), { weekStartsOn: 1 });
+      } else if (period.type === "current_month") {
+        start = startOfMonth(new Date());
+        end = endOfMonth(new Date());
+      } else {
+        start = parseISO(period.from!);
+        end = parseISO(period.to!);
+      }
+
+      const { data, error } = await supabase
+        .from("calendar_assignments")
+        .select(`
+          *,
+          profiles (
+            full_name,
+            volunteer_number,
+            locality,
+            volunteer_skills (category_id, skill_level, years_experience)
+          ),
+          work_categories (id, name, color, icon)
+        `)
+        .gte("assignment_date", format(start, "yyyy-MM-dd"))
+        .lte("assignment_date", format(end, "yyyy-MM-dd"));
+
+      if (error) throw error;
+
+      const filteredData = data as unknown as AssignmentRow[];
+      const filename = `reporte-asignaciones-${format(start, "yyyyMMdd")}-${format(end, "yyyyMMdd")}`;
+      const periodStr = `${format(start, "dd/MM/yyyy")} al ${format(end, "dd/MM/yyyy")}`;
+
+      if (formatType === 'excel') {
+        const rows = filteredData.map(a => [
+          a.assignment_date,
+          a.work_categories?.name || "",
+          a.profiles?.full_name || "",
+          a.profiles?.volunteer_number || "",
+          a.profiles?.volunteer_skills?.find((s: any) => s.category_id === a.category_id)?.skill_level || "",
+          a.profiles?.locality || "",
+          STATUS_LABELS[a.status] || a.status
+        ]);
+        downloadExcel(`${filename}.xlsx`, [{
+          name: "Asignaciones",
+          headers: ["Fecha", "Categoría", "Nombre", "N° Voluntario", "Nivel", "Localidad", "Estado"],
+          rows
+        }]);
+      } else if (formatType === 'pdf') {
+        let html = reportHeader("Reporte de Asignaciones", `Período: ${periodStr}`);
+        
+        const byDate: Record<string, Record<string, AssignmentRow[]>> = {};
+        filteredData.forEach(a => {
+          const dateKey = a.assignment_date;
+          if (!byDate[dateKey]) byDate[dateKey] = {};
+          const catName = a.work_categories?.name || "Sin categoría";
+          const dayMap = byDate[dateKey];
+          if (!dayMap[catName]) dayMap[catName] = [];
+          dayMap[catName].push(a);
+        });
+
+        const sortedDates = Object.keys(byDate).sort();
+
+        sortedDates.forEach(dateStr => {
+          const date = parseISO(dateStr);
+          html += `<h2 class="day">${format(date, "EEEE dd 'de' MMMM", { locale: es })}</h2>`;
+          
+          const dayCategories = byDate[dateStr] || {};
+          Object.entries(dayCategories).forEach(([catName, list]) => {
+            html += `<h3 class="cat">${catName}</h3>`;
+            html += `<table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>N°</th>
+                  <th>Nivel</th>
+                  <th>Exp</th>
+                  <th>Localidad</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${list.map(a => {
+                  const skill = a.profiles?.volunteer_skills?.find((s: any) => s.category_id === a.category_id);
+                  return `
+                  <tr>
+                    <td><strong>${a.profiles?.full_name}</strong></td>
+                    <td>${a.profiles?.volunteer_number}</td>
+                    <td>${skill?.skill_level || '-'}</td>
+                    <td>${skill?.years_experience || 0}a</td>
+                    <td>${a.profiles?.locality}</td>
+                  </tr>
+                `}).join('')}
+              </tbody>
+            </table>`;
+          });
+        });
+
+        html += reportFooter();
+        printHtmlReport(filename, html);
+      }
+      
+      toast.success("Reporte generado");
+    } catch (err) {
+      toast.error("Error al generar el reporte");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-6 p-6 md:p-8">
       <div>
@@ -165,10 +284,14 @@ function ReportesPage() {
               <Download className="h-4 w-4" />
               Excel
             </button>
-            <button className="btn-outline h-9 flex-1 text-xs">
+            <button 
+              onClick={() => setIsExporting(true)}
+              className="btn-outline h-9 flex-1 text-xs"
+            >
               <Printer className="h-4 w-4" />
               PDF
             </button>
+
           </div>
         </div>
 
@@ -193,21 +316,31 @@ function ReportesPage() {
         </div>
 
         <div className="card-soft flex flex-col p-6">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-success/10 text-success mb-4">
-            <BarChart3 className="h-6 w-6" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-4">
+            <Download className="h-6 w-6" />
           </div>
-          <h3 className="text-lg font-bold text-slate-900">Estadísticas de Obra</h3>
+          <h3 className="text-lg font-bold text-slate-900">Reporte Personalizado</h3>
           <p className="mt-2 flex-1 text-sm text-slate-500 leading-relaxed">
-            Resumen de participación, categorías más demandadas y cumplimiento de asistencia mensual.
+            Genera un reporte de asignaciones detallado eligiendo un rango de fechas específico.
           </p>
-          <div className="mt-6">
-            <button className="btn-outline h-9 w-full text-xs">
-              <PieChart className="h-4 w-4" />
-              Ver Tablero
+          <div className="mt-6 flex gap-2">
+            <button 
+              onClick={() => setIsExporting(true)}
+              className="btn-navy h-9 w-full text-xs"
+            >
+              <Calendar className="h-4 w-4" />
+              Seleccionar Rango
             </button>
           </div>
         </div>
       </div>
+
+      <ExportModal 
+        isOpen={isExporting}
+        onClose={() => setIsExporting(false)}
+        onConfirm={(period) => handleExport(period, 'pdf')}
+      />
+
 
       <div className="card-soft p-6 bg-slate-50/50 border-dashed border-2">
         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Estado del Sistema</h3>
