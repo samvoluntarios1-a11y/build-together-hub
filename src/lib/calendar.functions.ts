@@ -209,9 +209,15 @@ export const updateAssignment = createServerFn({ method: "POST" })
       }
     }
 
+    const dbUpdates: any = {};
+    if (updates.assignment_date !== undefined) dbUpdates.assignment_date = updates.assignment_date;
+    if (updates.category_id !== undefined) dbUpdates.category_id = updates.category_id;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.notes !== undefined) dbUpdates.notes = updates.notes ?? null;
+
     const { data: result, error } = await supabaseAdmin
       .from("calendar_assignments")
-      .update(updates)
+      .update(dbUpdates)
       .eq("id", id)
       .select()
       .single();
