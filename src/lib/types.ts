@@ -85,12 +85,6 @@ export const SKILL_LEVEL_LABELS: Record<SkillLevel, string> = {
   basica: "Básica",
 };
 
-export const STATUS_LABELS: Record<AssignmentStatus, string> = {
-  assigned: "Asignado",
-  confirmed: "Confirmado",
-  cancelled: "Cancelado",
-  completed: "Completado",
-};
 
 export const MAX_SKILLS = 3;
 export const PROJECT_MONTHS = 18;
