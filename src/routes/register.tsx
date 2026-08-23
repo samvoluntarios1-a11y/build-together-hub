@@ -399,10 +399,17 @@ function RegisterPage() {
           dias: draft.dates.length,
         } as SuccessSearch,
       });
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error("DEBUG_REGISTER_ERROR:", {
+        table: "multiple (profiles, skills, availability, accommodation)",
+        operation: "submit_transactional",
+        message: err?.message,
+        details: err?.details,
+        hint: err?.hint,
+        code: err?.code,
+      });
       toast.error("No pudimos enviar tu registro", {
-        description: "Revisá tu conexión e intentá de nuevo. Tus datos siguen guardados.",
+        description: `Error (${err?.code || 'unknown'}): ${err?.message || 'Revisá tu conexión e intentá de nuevo.'}`,
       });
     } finally {
       setSubmitting(false);
