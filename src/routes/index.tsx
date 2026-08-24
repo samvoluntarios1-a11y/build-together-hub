@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ClipboardList, CalendarDays, BedDouble, ArrowRight } from "lucide-react";
+import { ClipboardList, CalendarDays, BedDouble, ArrowRight, HardHat } from "lucide-react";
 import heroImg from "@/assets/hero-voluntarios.jpg";
 import { AppLogo } from "@/components/AppLogo";
 
@@ -30,7 +30,7 @@ const STEPS = [
     text: "Tu número de voluntario, nombre y localidad. Sin crear cuenta ni contraseñas.",
   },
   {
-    icon: AppLogo,
+    icon: HardHat,
     title: "Cargá tus habilidades",
     text: "Hasta 3 oficios con tu nivel y años de experiencia, para asignarte donde más rendís.",
   },

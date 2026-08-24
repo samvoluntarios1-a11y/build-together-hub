@@ -16,6 +16,7 @@ import {
   Loader2,
   CheckCircle2,
   Save,
+  HardHat,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { submitRegistration } from "@/lib/registration.functions";
@@ -96,7 +97,7 @@ const EMPTY_DRAFT: Draft = {
 const DRAFT_KEY = "voluntarios-ldc-draft-v1";
 const STEPS = [
   { label: "Datos", icon: User },
-  { label: "Habilidades", icon: AppLogo },
+  { label: "Habilidades", icon: HardHat },
   { label: "Disponibilidad", icon: CalendarDays },
   { label: "Alojamiento", icon: BedDouble },
   { label: "Revisión", icon: ClipboardCheck },
