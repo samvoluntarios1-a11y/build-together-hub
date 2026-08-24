@@ -16,6 +16,7 @@ import {
   Loader2,
   CheckCircle2,
   Save,
+  HardHat,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { submitRegistration } from "@/lib/registration.functions";
