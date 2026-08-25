@@ -20,6 +20,10 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { submitRegistration } from "@/lib/registration.functions";
+import {
+  checkVolunteerRegistrationStatus,
+  updateExistingVolunteerAvailability,
+} from "@/lib/existing-volunteer.functions";
 import { AvailabilityCalendar } from "@/components/register/AvailabilityCalendar";
 import { CategoryIcon } from "@/lib/icons";
 import { AppLogo } from "@/components/AppLogo";
@@ -55,6 +59,20 @@ interface SkillDraft {
   skill_level: SkillLevel;
   years_experience: number;
   description: string;
+}
+
+interface ExistingInfo {
+  profileId: string;
+  full_name: string;
+  locality: string;
+  skills: SkillDraft[];
+  accommodation: {
+    needs_accommodation: boolean;
+    locality_origin: string | null;
+    dates_needed_start: string | null;
+    dates_needed_end: string | null;
+    special_requirements: string | null;
+  } | null;
 }
 
 interface Draft {
@@ -121,7 +139,10 @@ function RegisterPage() {
   const [rangeFrom, setRangeFrom] = useState("");
   const [rangeTo, setRangeTo] = useState("");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [existing, setExisting] = useState<ExistingInfo | null>(null);
+  const [editSkills, setEditSkills] = useState(false);
   const restored = useRef(false);
+  const isUpdate = existing !== null;
 
   const { data: categories } = useQuery({
     queryKey: ["work-categories-public"],
@@ -203,6 +224,74 @@ function RegisterPage() {
     }
   }
 
+  /**
+   * Detección segura por número + nombre + localidad.
+   * Devuelve "new" | "update" | "mismatch" | "incomplete".
+   */
+  async function detectVolunteer(): Promise<"new" | "update" | "mismatch" | "incomplete"> {
+    const num = draft.volunteer_number.trim();
+    const name = draft.full_name.trim();
+    const loc = draft.locality.trim();
+    if (!num) return "incomplete";
+    if (name.length < 3 || !loc) {
+      // Sin datos suficientes: sólo chequeamos disponibilidad del número
+      const available = await checkNumber(num);
+      return available ? "new" : "incomplete";
+    }
+
+    setCheckingNumber(true);
+    try {
+      const res = await checkVolunteerRegistrationStatus({
+        data: { volunteer_number: num, full_name: name, locality: loc },
+      });
+
+      if (!res.exists) {
+        setExisting(null);
+        setEditSkills(false);
+        setNumberOk(true);
+        return "new";
+      }
+
+      if (!res.matched) {
+        setExisting(null);
+        setNumberOk(false);
+        return "mismatch";
+      }
+
+      const skills = (res.skills ?? []).map((s) => ({
+        category_id: s.category_id,
+        skill_level: s.skill_level as SkillLevel,
+        years_experience: s.years_experience,
+        description: s.description ?? "",
+      }));
+
+      setExisting({
+        profileId: res.profileId!,
+        full_name: res.volunteer!.full_name,
+        locality: res.volunteer!.locality,
+        skills,
+        accommodation: res.accommodation ?? null,
+      });
+      setEditSkills(false);
+      setNumberOk(null);
+      setDraft((d) => ({
+        ...d,
+        skills,
+        needs_accommodation: res.accommodation?.needs_accommodation ?? d.needs_accommodation,
+        locality_origin: res.accommodation?.locality_origin ?? d.locality_origin,
+        dates_needed_start: res.accommodation?.dates_needed_start ?? d.dates_needed_start,
+        dates_needed_end: res.accommodation?.dates_needed_end ?? d.dates_needed_end,
+        special_requirements: res.accommodation?.special_requirements ?? d.special_requirements,
+      }));
+      return "update";
+    } catch {
+      setNumberOk(null);
+      return "incomplete";
+    } finally {
+      setCheckingNumber(false);
+    }
+  }
+
   function validateStep(s: number): boolean {
     const e: StepErrors = {};
     if (s === 0) {
@@ -212,9 +301,9 @@ function RegisterPage() {
         e.full_name = "Ingresá tu nombre completo";
       if (!draft.locality.trim())
         e.locality = "Ingresá tu localidad (ej: Junín - Mendoza)";
-      if (numberOk === false)
+      if (numberOk === false && !isUpdate)
         e.volunteer_number =
-          "Este número ya está registrado, por favor verificá tu número";
+          "El número de voluntario ya está registrado, pero los datos no coinciden. Verificá tu número, nombre y localidad o consultá al coordinador.";
     }
     if (s === 1 && draft.skills.length === 0) {
       e.skills = "Agregá al menos una habilidad";
@@ -244,11 +333,17 @@ function RegisterPage() {
     if (step === 0) {
       const ok = validateStep(0);
       if (!ok) return;
-      const available = await checkNumber(draft.volunteer_number);
-      if (!available) {
+      const result = await detectVolunteer();
+      if (result === "mismatch") {
         setErrors({
           volunteer_number:
-            "Este número ya está registrado, por favor verificá tu número",
+            "El número de voluntario ya está registrado, pero los datos no coinciden. Verificá tu número, nombre y localidad o consultá al coordinador.",
+        });
+        return;
+      }
+      if (result === "incomplete") {
+        setErrors({
+          volunteer_number: "No pudimos verificar tu número. Intentá de nuevo.",
         });
         return;
       }

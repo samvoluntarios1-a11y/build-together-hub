@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS availability_volunteer_date_uidx ON public.availability (volunteer_id, available_date);
