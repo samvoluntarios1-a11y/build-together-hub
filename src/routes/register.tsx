@@ -125,7 +125,10 @@ function RegisterPage() {
   const [rangeFrom, setRangeFrom] = useState("");
   const [rangeTo, setRangeTo] = useState("");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [existing, setExisting] = useState<ExistingInfo | null>(null);
+  const [editSkills, setEditSkills] = useState(false);
   const restored = useRef(false);
+  const isUpdate = existing !== null;
 
   const { data: categories } = useQuery({
     queryKey: ["work-categories-public"],
