@@ -61,6 +61,20 @@ interface SkillDraft {
   description: string;
 }
 
+interface ExistingInfo {
+  profileId: string;
+  full_name: string;
+  locality: string;
+  skills: SkillDraft[];
+  accommodation: {
+    needs_accommodation: boolean;
+    locality_origin: string | null;
+    dates_needed_start: string | null;
+    dates_needed_end: string | null;
+    special_requirements: string | null;
+  } | null;
+}
+
 interface Draft {
   volunteer_number: string;
   full_name: string;
