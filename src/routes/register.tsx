@@ -20,6 +20,10 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { submitRegistration } from "@/lib/registration.functions";
+import {
+  checkVolunteerRegistrationStatus,
+  updateExistingVolunteerAvailability,
+} from "@/lib/existing-volunteer.functions";
 import { AvailabilityCalendar } from "@/components/register/AvailabilityCalendar";
 import { CategoryIcon } from "@/lib/icons";
 import { AppLogo } from "@/components/AppLogo";
