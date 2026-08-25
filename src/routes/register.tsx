@@ -224,6 +224,74 @@ function RegisterPage() {
     }
   }
 
+  /**
+   * Detección segura por número + nombre + localidad.
+   * Devuelve "new" | "update" | "mismatch" | "incomplete".
+   */
+  async function detectVolunteer(): Promise<"new" | "update" | "mismatch" | "incomplete"> {
+    const num = draft.volunteer_number.trim();
+    const name = draft.full_name.trim();
+    const loc = draft.locality.trim();
+    if (!num) return "incomplete";
+    if (name.length < 3 || !loc) {
+      // Sin datos suficientes: sólo chequeamos disponibilidad del número
+      const available = await checkNumber(num);
+      return available ? "new" : "incomplete";
+    }
+
+    setCheckingNumber(true);
+    try {
+      const res = await checkVolunteerRegistrationStatus({
+        data: { volunteer_number: num, full_name: name, locality: loc },
+      });
+
+      if (!res.exists) {
+        setExisting(null);
+        setEditSkills(false);
+        setNumberOk(true);
+        return "new";
+      }
+
+      if (!res.matched) {
+        setExisting(null);
+        setNumberOk(false);
+        return "mismatch";
+      }
+
+      const skills = (res.skills ?? []).map((s) => ({
+        category_id: s.category_id,
+        skill_level: s.skill_level as SkillLevel,
+        years_experience: s.years_experience,
+        description: s.description ?? "",
+      }));
+
+      setExisting({
+        profileId: res.profileId!,
+        full_name: res.volunteer!.full_name,
+        locality: res.volunteer!.locality,
+        skills,
+        accommodation: res.accommodation ?? null,
+      });
+      setEditSkills(false);
+      setNumberOk(null);
+      setDraft((d) => ({
+        ...d,
+        skills,
+        needs_accommodation: res.accommodation?.needs_accommodation ?? d.needs_accommodation,
+        locality_origin: res.accommodation?.locality_origin ?? d.locality_origin,
+        dates_needed_start: res.accommodation?.dates_needed_start ?? d.dates_needed_start,
+        dates_needed_end: res.accommodation?.dates_needed_end ?? d.dates_needed_end,
+        special_requirements: res.accommodation?.special_requirements ?? d.special_requirements,
+      }));
+      return "update";
+    } catch {
+      setNumberOk(null);
+      return "incomplete";
+    } finally {
+      setCheckingNumber(false);
+    }
+  }
+
   function validateStep(s: number): boolean {
     const e: StepErrors = {};
     if (s === 0) {
