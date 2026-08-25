@@ -301,9 +301,9 @@ function RegisterPage() {
         e.full_name = "Ingresá tu nombre completo";
       if (!draft.locality.trim())
         e.locality = "Ingresá tu localidad (ej: Junín - Mendoza)";
-      if (numberOk === false)
+      if (numberOk === false && !isUpdate)
         e.volunteer_number =
-          "Este número ya está registrado, por favor verificá tu número";
+          "El número de voluntario ya está registrado, pero los datos no coinciden. Verificá tu número, nombre y localidad o consultá al coordinador.";
     }
     if (s === 1 && draft.skills.length === 0) {
       e.skills = "Agregá al menos una habilidad";
@@ -333,11 +333,17 @@ function RegisterPage() {
     if (step === 0) {
       const ok = validateStep(0);
       if (!ok) return;
-      const available = await checkNumber(draft.volunteer_number);
-      if (!available) {
+      const result = await detectVolunteer();
+      if (result === "mismatch") {
         setErrors({
           volunteer_number:
-            "Este número ya está registrado, por favor verificá tu número",
+            "El número de voluntario ya está registrado, pero los datos no coinciden. Verificá tu número, nombre y localidad o consultá al coordinador.",
+        });
+        return;
+      }
+      if (result === "incomplete") {
+        setErrors({
+          volunteer_number: "No pudimos verificar tu número. Intentá de nuevo.",
         });
         return;
       }
