@@ -327,19 +327,18 @@ function RegisterPage() {
       const ok = validateStep(0);
       if (!ok) return;
       const result = await detectVolunteer();
-      if (result === "mismatch") {
-        setErrors({
-          volunteer_number:
-            "El número de voluntario ya está registrado, pero los datos no coinciden. Verificá tu número, nombre y localidad o consultá al coordinador.",
-        });
-        return;
-      }
       if (result === "incomplete") {
         setErrors({
           volunteer_number: "No pudimos verificar tu número. Intentá de nuevo.",
         });
         return;
       }
+      if (result === "update") {
+        toast.success("¡Te encontramos!", {
+          description: "Cargá tu nueva disponibilidad. Tus habilidades quedaron guardadas.",
+        });
+      }
+
     } else if (!validateStep(step)) {
       return;
     }
