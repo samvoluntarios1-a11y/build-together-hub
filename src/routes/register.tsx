@@ -225,24 +225,21 @@ function RegisterPage() {
   }
 
   /**
-   * Detección segura por número + nombre + localidad.
-   * Devuelve "new" | "update" | "mismatch" | "incomplete".
+   * Detección por número de voluntario (identificador único).
+   * El nombre y la localidad pueden cambiar: se actualizan al enviar.
    */
-  async function detectVolunteer(): Promise<"new" | "update" | "mismatch" | "incomplete"> {
+  async function detectVolunteer(): Promise<"new" | "update" | "incomplete"> {
     const num = draft.volunteer_number.trim();
-    const name = draft.full_name.trim();
-    const loc = draft.locality.trim();
     if (!num) return "incomplete";
-    if (name.length < 3 || !loc) {
-      // Sin datos suficientes: sólo chequeamos disponibilidad del número
-      const available = await checkNumber(num);
-      return available ? "new" : "incomplete";
-    }
 
     setCheckingNumber(true);
     try {
       const res = await checkVolunteerRegistrationStatus({
-        data: { volunteer_number: num, full_name: name, locality: loc },
+        data: {
+          volunteer_number: num,
+          full_name: draft.full_name.trim(),
+          locality: draft.locality.trim(),
+        },
       });
 
       if (!res.exists) {
@@ -250,12 +247,6 @@ function RegisterPage() {
         setEditSkills(false);
         setNumberOk(true);
         return "new";
-      }
-
-      if (!res.matched) {
-        setExisting(null);
-        setNumberOk(false);
-        return "mismatch";
       }
 
       const skills = (res.skills ?? []).map((s) => ({
@@ -276,7 +267,9 @@ function RegisterPage() {
       setNumberOk(null);
       setDraft((d) => ({
         ...d,
-        skills,
+        full_name: d.full_name.trim() || res.volunteer!.full_name,
+        locality: d.locality.trim() || res.volunteer!.locality,
+        skills: skills.length > 0 ? skills : d.skills,
         needs_accommodation: res.accommodation?.needs_accommodation ?? d.needs_accommodation,
         locality_origin: res.accommodation?.locality_origin ?? d.locality_origin,
         dates_needed_start: res.accommodation?.dates_needed_start ?? d.dates_needed_start,
@@ -292,6 +285,7 @@ function RegisterPage() {
     }
   }
 
+
   function validateStep(s: number): boolean {
     const e: StepErrors = {};
     if (s === 0) {
@@ -301,9 +295,8 @@ function RegisterPage() {
         e.full_name = "Ingresá tu nombre completo";
       if (!draft.locality.trim())
         e.locality = "Ingresá tu localidad (ej: Junín - Mendoza)";
-      if (numberOk === false && !isUpdate)
-        e.volunteer_number =
-          "El número de voluntario ya está registrado, pero los datos no coinciden. Verificá tu número, nombre y localidad o consultá al coordinador.";
+      // El número de voluntario identifica: si ya existe, se actualiza el registro.
+
     }
     if (s === 1 && draft.skills.length === 0) {
       e.skills = "Agregá al menos una habilidad";
@@ -334,19 +327,18 @@ function RegisterPage() {
       const ok = validateStep(0);
       if (!ok) return;
       const result = await detectVolunteer();
-      if (result === "mismatch") {
-        setErrors({
-          volunteer_number:
-            "El número de voluntario ya está registrado, pero los datos no coinciden. Verificá tu número, nombre y localidad o consultá al coordinador.",
-        });
-        return;
-      }
       if (result === "incomplete") {
         setErrors({
           volunteer_number: "No pudimos verificar tu número. Intentá de nuevo.",
         });
         return;
       }
+      if (result === "update") {
+        toast.success("¡Te encontramos!", {
+          description: "Cargá tu nueva disponibilidad. Tus habilidades quedaron guardadas.",
+        });
+      }
+
     } else if (!validateStep(step)) {
       return;
     }
@@ -562,22 +554,37 @@ function RegisterPage() {
                     onChange={(e) => {
                       set("volunteer_number", e.target.value);
                       setNumberOk(null);
+                      setExisting(null);
                     }}
-                    onBlur={() => draft.volunteer_number.trim() && checkNumber(draft.volunteer_number)}
+                    onBlur={() => draft.volunteer_number.trim() && detectVolunteer()}
                   />
                   {checkingNumber && (
                     <Loader2 className="absolute right-4 top-3.5 h-5 w-5 animate-spin text-muted-foreground" />
                   )}
-                  {numberOk === true && (
+                  {!checkingNumber && (numberOk === true || isUpdate) && (
                     <CheckCircle2 className="absolute right-4 top-3.5 h-5 w-5 text-success" />
                   )}
                 </div>
                 {errors.volunteer_number && (
                   <p className="mt-1 text-sm text-destructive">{errors.volunteer_number}</p>
                 )}
-                {numberOk === true && (
+                {numberOk === true && !isUpdate && (
                   <p className="mt-1 text-sm text-success">Número disponible ✓</p>
                 )}
+                {isUpdate && (
+                  <div className="mt-2 rounded-xl border border-success/30 bg-success/10 p-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-success px-2.5 py-0.5 text-xs font-bold text-white">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Voluntario registrado
+                    </span>
+                    <p className="mt-2 text-sm font-semibold">¡Te encontramos!</p>
+                    <p className="text-sm text-muted-foreground">
+                      Vamos a agregar nueva disponibilidad a tu registro. Si tu nombre o
+                      localidad cambiaron, corregilos acá y los actualizamos.
+                    </p>
+                  </div>
+                )}
+
               </div>
               <div>
                 <label htmlFor="full_name" className="mb-1.5 block text-sm font-semibold">
@@ -620,6 +627,39 @@ function RegisterPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               Agregá hasta {MAX_SKILLS} oficios. Así te asignamos donde más ayudás.
             </p>
+
+            {isUpdate && !editSkills && (
+              <div className="mt-6 rounded-xl border border-success/30 bg-success/10 p-5">
+                <h2 className="font-bold">Tus habilidades registradas</h2>
+                <div className="mt-3 space-y-2">
+                  {draft.skills.map((s) => {
+                    const cat = catById.get(s.category_id);
+                    return (
+                      <div key={s.category_id} className="flex flex-wrap items-center gap-2 text-sm">
+                        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: cat?.color ?? "#1a3a5c" }} />
+                        <span className="font-semibold">{cat?.name ?? "Categoría"}</span>
+                        <span className="text-muted-foreground">
+                          · {SKILL_LEVEL_LABELS[s.skill_level]} · {s.years_experience} años
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {draft.skills.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No tenías habilidades cargadas.</p>
+                  )}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button type="button" className="btn-accent" onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+                    Continuar con estas habilidades
+                  </button>
+                  <button type="button" className="btn-outline" onClick={() => setEditSkills(true)}>
+                    Editar mis habilidades
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {(!isUpdate || editSkills) && (<>
 
             <div className="mt-6 space-y-3">
               {draft.skills.map((s, i) => {
@@ -764,6 +804,7 @@ function RegisterPage() {
                 Agregar habilidad ({draft.skills.length}/{MAX_SKILLS})
               </button>
             )}
+            </>)}
           </section>
         )}
 
