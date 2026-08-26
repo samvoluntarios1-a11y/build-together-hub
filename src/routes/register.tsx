@@ -628,6 +628,39 @@ function RegisterPage() {
               Agregá hasta {MAX_SKILLS} oficios. Así te asignamos donde más ayudás.
             </p>
 
+            {isUpdate && !editSkills && (
+              <div className="mt-6 rounded-xl border border-success/30 bg-success/10 p-5">
+                <h2 className="font-bold">Tus habilidades registradas</h2>
+                <div className="mt-3 space-y-2">
+                  {draft.skills.map((s) => {
+                    const cat = catById.get(s.category_id);
+                    return (
+                      <div key={s.category_id} className="flex flex-wrap items-center gap-2 text-sm">
+                        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: cat?.color ?? "#1a3a5c" }} />
+                        <span className="font-semibold">{cat?.name ?? "Categoría"}</span>
+                        <span className="text-muted-foreground">
+                          · {SKILL_LEVEL_LABELS[s.skill_level]} · {s.years_experience} años
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {draft.skills.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No tenías habilidades cargadas.</p>
+                  )}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button type="button" className="btn-accent" onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+                    Continuar con estas habilidades
+                  </button>
+                  <button type="button" className="btn-outline" onClick={() => setEditSkills(true)}>
+                    Editar mis habilidades
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {(!isUpdate || editSkills) && (<>
+
             <div className="mt-6 space-y-3">
               {draft.skills.map((s, i) => {
                 const cat = catById.get(s.category_id);
@@ -771,6 +804,7 @@ function RegisterPage() {
                 Agregar habilidad ({draft.skills.length}/{MAX_SKILLS})
               </button>
             )}
+            </>)}
           </section>
         )}
 
