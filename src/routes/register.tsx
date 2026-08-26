@@ -225,24 +225,21 @@ function RegisterPage() {
   }
 
   /**
-   * Detección segura por número + nombre + localidad.
-   * Devuelve "new" | "update" | "mismatch" | "incomplete".
+   * Detección por número de voluntario (identificador único).
+   * El nombre y la localidad pueden cambiar: se actualizan al enviar.
    */
-  async function detectVolunteer(): Promise<"new" | "update" | "mismatch" | "incomplete"> {
+  async function detectVolunteer(): Promise<"new" | "update" | "incomplete"> {
     const num = draft.volunteer_number.trim();
-    const name = draft.full_name.trim();
-    const loc = draft.locality.trim();
     if (!num) return "incomplete";
-    if (name.length < 3 || !loc) {
-      // Sin datos suficientes: sólo chequeamos disponibilidad del número
-      const available = await checkNumber(num);
-      return available ? "new" : "incomplete";
-    }
 
     setCheckingNumber(true);
     try {
       const res = await checkVolunteerRegistrationStatus({
-        data: { volunteer_number: num, full_name: name, locality: loc },
+        data: {
+          volunteer_number: num,
+          full_name: draft.full_name.trim(),
+          locality: draft.locality.trim(),
+        },
       });
 
       if (!res.exists) {
@@ -250,12 +247,6 @@ function RegisterPage() {
         setEditSkills(false);
         setNumberOk(true);
         return "new";
-      }
-
-      if (!res.matched) {
-        setExisting(null);
-        setNumberOk(false);
-        return "mismatch";
       }
 
       const skills = (res.skills ?? []).map((s) => ({
@@ -276,7 +267,9 @@ function RegisterPage() {
       setNumberOk(null);
       setDraft((d) => ({
         ...d,
-        skills,
+        full_name: d.full_name.trim() || res.volunteer!.full_name,
+        locality: d.locality.trim() || res.volunteer!.locality,
+        skills: skills.length > 0 ? skills : d.skills,
         needs_accommodation: res.accommodation?.needs_accommodation ?? d.needs_accommodation,
         locality_origin: res.accommodation?.locality_origin ?? d.locality_origin,
         dates_needed_start: res.accommodation?.dates_needed_start ?? d.dates_needed_start,
@@ -291,6 +284,7 @@ function RegisterPage() {
       setCheckingNumber(false);
     }
   }
+
 
   function validateStep(s: number): boolean {
     const e: StepErrors = {};
