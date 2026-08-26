@@ -3,8 +3,8 @@ import { z } from "zod";
 
 const identitySchema = z.object({
   volunteer_number: z.string().min(1),
-  full_name: z.string().min(3),
-  locality: z.string().min(1),
+  full_name: z.string().optional().default(""),
+  locality: z.string().optional().default(""),
 });
 
 const skillSchema = z.object({
@@ -52,14 +52,8 @@ export const checkVolunteerRegistrationStatus = createServerFn({ method: "POST" 
 
     if (!profile) return { exists: false as const, matched: false };
 
-    const matched =
-      normalize(profile.full_name) === normalize(data.full_name) &&
-      normalize(profile.locality) === normalize(data.locality);
-
-    if (!matched) {
-      // No se revela ninguna información del perfil existente
-      return { exists: true as const, matched: false };
-    }
+    // La identificación es únicamente por número de voluntario.
+    // El nombre y la localidad pueden cambiar y se actualizan al enviar.
 
     const [{ data: skills }, { data: accommodation }] = await Promise.all([
       supabaseAdmin
@@ -106,20 +100,23 @@ export const updateExistingVolunteerAvailability = createServerFn({ method: "POS
         return { success: false as const, code: "NOT_FOUND", error: "No encontramos ese número de voluntario." };
       }
 
-      const matched =
-        normalize(profile.full_name) === normalize(data.full_name) &&
-        normalize(profile.locality) === normalize(data.locality);
-
-      if (!matched) {
-        return {
-          success: false as const,
-          code: "IDENTITY_MISMATCH",
-          error:
-            "El número de voluntario ya está registrado, pero los datos no coinciden. Verificá tu número, nombre y localidad o consultá al coordinador.",
-        };
-      }
-
       const volunteerId = profile.id;
+
+      // El número de voluntario manda: si cambió el nombre o la localidad, se actualizan.
+      const newName = data.full_name.trim();
+      const newLocality = data.locality.trim();
+      if (
+        (newName && normalize(newName) !== normalize(profile.full_name)) ||
+        (newLocality && normalize(newLocality) !== normalize(profile.locality))
+      ) {
+        await supabaseAdmin
+          .from("profiles")
+          .update({
+            full_name: newName || profile.full_name,
+            locality: newLocality || profile.locality,
+          })
+          .eq("id", volunteerId);
+      }
 
       // 1. Fechas: sólo futuras y sin duplicados
       const today = new Date().toISOString().slice(0, 10);
