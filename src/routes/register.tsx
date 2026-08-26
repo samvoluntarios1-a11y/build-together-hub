@@ -554,22 +554,37 @@ function RegisterPage() {
                     onChange={(e) => {
                       set("volunteer_number", e.target.value);
                       setNumberOk(null);
+                      setExisting(null);
                     }}
-                    onBlur={() => draft.volunteer_number.trim() && checkNumber(draft.volunteer_number)}
+                    onBlur={() => draft.volunteer_number.trim() && detectVolunteer()}
                   />
                   {checkingNumber && (
                     <Loader2 className="absolute right-4 top-3.5 h-5 w-5 animate-spin text-muted-foreground" />
                   )}
-                  {numberOk === true && (
+                  {!checkingNumber && (numberOk === true || isUpdate) && (
                     <CheckCircle2 className="absolute right-4 top-3.5 h-5 w-5 text-success" />
                   )}
                 </div>
                 {errors.volunteer_number && (
                   <p className="mt-1 text-sm text-destructive">{errors.volunteer_number}</p>
                 )}
-                {numberOk === true && (
+                {numberOk === true && !isUpdate && (
                   <p className="mt-1 text-sm text-success">Número disponible ✓</p>
                 )}
+                {isUpdate && (
+                  <div className="mt-2 rounded-xl border border-success/30 bg-success/10 p-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-success px-2.5 py-0.5 text-xs font-bold text-white">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Voluntario registrado
+                    </span>
+                    <p className="mt-2 text-sm font-semibold">¡Te encontramos!</p>
+                    <p className="text-sm text-muted-foreground">
+                      Vamos a agregar nueva disponibilidad a tu registro. Si tu nombre o
+                      localidad cambiaron, corregilos acá y los actualizamos.
+                    </p>
+                  </div>
+                )}
+
               </div>
               <div>
                 <label htmlFor="full_name" className="mb-1.5 block text-sm font-semibold">
