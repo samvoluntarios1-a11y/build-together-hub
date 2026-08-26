@@ -295,9 +295,8 @@ function RegisterPage() {
         e.full_name = "Ingresá tu nombre completo";
       if (!draft.locality.trim())
         e.locality = "Ingresá tu localidad (ej: Junín - Mendoza)";
-      if (numberOk === false && !isUpdate)
-        e.volunteer_number =
-          "El número de voluntario ya está registrado, pero los datos no coinciden. Verificá tu número, nombre y localidad o consultá al coordinador.";
+      // El número de voluntario identifica: si ya existe, se actualiza el registro.
+
     }
     if (s === 1 && draft.skills.length === 0) {
       e.skills = "Agregá al menos una habilidad";
