@@ -145,13 +145,17 @@ export type Database = {
         Row: {
           assigned_by: string | null
           assignment_date: string
+          availability_source: string
           category_id: string
           check_in_time: string | null
           check_out_time: string | null
           created_at: string
+          flexible_rule_id: string | null
           id: string
+          is_override: boolean
           month: number | null
           notes: string | null
+          override_reason: string | null
           skill_type: string
           status: string
           updated_at: string
@@ -162,13 +166,17 @@ export type Database = {
         Insert: {
           assigned_by?: string | null
           assignment_date: string
+          availability_source?: string
           category_id: string
           check_in_time?: string | null
           check_out_time?: string | null
           created_at?: string
+          flexible_rule_id?: string | null
           id?: string
+          is_override?: boolean
           month?: number | null
           notes?: string | null
+          override_reason?: string | null
           skill_type?: string
           status?: string
           updated_at?: string
@@ -179,13 +187,17 @@ export type Database = {
         Update: {
           assigned_by?: string | null
           assignment_date?: string
+          availability_source?: string
           category_id?: string
           check_in_time?: string | null
           check_out_time?: string | null
           created_at?: string
+          flexible_rule_id?: string | null
           id?: string
+          is_override?: boolean
           month?: number | null
           notes?: string | null
+          override_reason?: string | null
           skill_type?: string
           status?: string
           updated_at?: string
@@ -202,7 +214,70 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "calendar_assignments_flexible_rule_id_fkey"
+            columns: ["flexible_rule_id"]
+            isOneToOne: false
+            referencedRelation: "flexible_availability"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "calendar_assignments_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flexible_availability: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          frequency_type: string
+          id: string
+          is_active: boolean
+          is_any_day: boolean
+          max_occurrences: number | null
+          notes: string | null
+          preferred_days: Json | null
+          preferred_shift: string | null
+          start_date: string | null
+          updated_at: string
+          volunteer_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          frequency_type: string
+          id?: string
+          is_active?: boolean
+          is_any_day?: boolean
+          max_occurrences?: number | null
+          notes?: string | null
+          preferred_days?: Json | null
+          preferred_shift?: string | null
+          start_date?: string | null
+          updated_at?: string
+          volunteer_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          frequency_type?: string
+          id?: string
+          is_active?: boolean
+          is_any_day?: boolean
+          max_occurrences?: number | null
+          notes?: string | null
+          preferred_days?: Json | null
+          preferred_shift?: string | null
+          start_date?: string | null
+          updated_at?: string
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flexible_availability_volunteer_id_fkey"
             columns: ["volunteer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -380,6 +455,7 @@ export type Database = {
       }
       cleanup_old_assignments: { Args: never; Returns: number }
       cleanup_old_availability: { Args: never; Returns: number }
+      deactivate_expired_flexible_availability: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
