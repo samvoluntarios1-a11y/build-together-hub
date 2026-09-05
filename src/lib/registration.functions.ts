@@ -1,23 +1,32 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { flexibleRuleSchema, normalizeFlexibleRule } from "./flexible.schema";
 
-const registrationSchema = z.object({
-  volunteer_number: z.string().min(1),
-  full_name: z.string().min(3),
-  locality: z.string().min(1),
-  skills: z.array(z.object({
-    category_id: z.string().uuid(),
-    skill_level: z.string(),
-    years_experience: z.number().min(0),
-    description: z.string().optional(),
-  })).max(3),
-  dates: z.array(z.string()).min(1),
-  needs_accommodation: z.boolean(),
-  locality_origin: z.string().optional(),
-  dates_needed_start: z.string().optional(),
-  dates_needed_end: z.string().optional(),
-  special_requirements: z.string().optional(),
-});
+const registrationSchema = z
+  .object({
+    volunteer_number: z.string().min(1),
+    full_name: z.string().min(3),
+    locality: z.string().min(1),
+    skills: z.array(z.object({
+      category_id: z.string().uuid(),
+      skill_level: z.string(),
+      years_experience: z.number().min(0),
+      description: z.string().optional(),
+    })).max(3),
+    dates: z.array(z.string()).default([]),
+    availability_mode: z.enum(["dates", "flexible"]).default("dates"),
+    flexible: flexibleRuleSchema.nullable().optional(),
+    needs_accommodation: z.boolean(),
+    locality_origin: z.string().optional(),
+    dates_needed_start: z.string().optional(),
+    dates_needed_end: z.string().optional(),
+    special_requirements: z.string().optional(),
+  })
+  .refine(
+    (d) =>
+      d.availability_mode === "flexible" ? !!d.flexible : d.dates.length > 0,
+    { message: "Indicá tu disponibilidad" },
+  );
 
 export const submitRegistration = createServerFn({ method: "POST" })
   .inputValidator((data) => registrationSchema.parse(data))
