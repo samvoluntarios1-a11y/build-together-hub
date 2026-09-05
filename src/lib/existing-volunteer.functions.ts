@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { flexibleRuleSchema, normalizeFlexibleRule } from "./flexible.schema";
 
 const identitySchema = z.object({
   volunteer_number: z.string().min(1),
@@ -14,16 +15,24 @@ const skillSchema = z.object({
   description: z.string().optional(),
 });
 
-const updateSchema = identitySchema.extend({
-  dates: z.array(z.string()).min(1),
-  edited_skills: z.boolean().default(false),
-  skills: z.array(skillSchema).max(3).optional(),
-  needs_accommodation: z.boolean(),
-  locality_origin: z.string().optional(),
-  dates_needed_start: z.string().optional(),
-  dates_needed_end: z.string().optional(),
-  special_requirements: z.string().optional(),
-});
+const updateSchema = identitySchema
+  .extend({
+    dates: z.array(z.string()).default([]),
+    availability_mode: z.enum(["dates", "flexible"]).default("dates"),
+    flexible: flexibleRuleSchema.nullable().optional(),
+    edited_skills: z.boolean().default(false),
+    skills: z.array(skillSchema).max(3).optional(),
+    needs_accommodation: z.boolean(),
+    locality_origin: z.string().optional(),
+    dates_needed_start: z.string().optional(),
+    dates_needed_end: z.string().optional(),
+    special_requirements: z.string().optional(),
+  })
+  .refine(
+    (d) =>
+      d.availability_mode === "flexible" ? !!d.flexible : d.dates.length > 0,
+    { message: "Indicá tu disponibilidad" },
+  );
 
 function normalize(value: string): string {
   return value
@@ -55,19 +64,26 @@ export const checkVolunteerRegistrationStatus = createServerFn({ method: "POST" 
     // La identificación es únicamente por número de voluntario.
     // El nombre y la localidad pueden cambiar y se actualizan al enviar.
 
-    const [{ data: skills }, { data: accommodation }] = await Promise.all([
-      supabaseAdmin
-        .from("volunteer_skills")
-        .select("category_id, skill_level, years_experience, description")
-        .eq("volunteer_id", profile.id),
-      supabaseAdmin
-        .from("accommodation_requests")
-        .select(
-          "needs_accommodation, locality_origin, dates_needed_start, dates_needed_end, special_requirements",
-        )
-        .eq("volunteer_id", profile.id)
-        .maybeSingle(),
-    ]);
+    const [{ data: skills }, { data: accommodation }, { data: flexible }] =
+      await Promise.all([
+        supabaseAdmin
+          .from("volunteer_skills")
+          .select("category_id, skill_level, years_experience, description")
+          .eq("volunteer_id", profile.id),
+        supabaseAdmin
+          .from("accommodation_requests")
+          .select(
+            "needs_accommodation, locality_origin, dates_needed_start, dates_needed_end, special_requirements",
+          )
+          .eq("volunteer_id", profile.id)
+          .maybeSingle(),
+        supabaseAdmin
+          .from("flexible_availability")
+          .select("*")
+          .eq("volunteer_id", profile.id)
+          .eq("is_active", true)
+          .maybeSingle(),
+      ]);
 
     return {
       exists: true as const,
@@ -80,6 +96,7 @@ export const checkVolunteerRegistrationStatus = createServerFn({ method: "POST" 
       },
       skills: skills ?? [],
       accommodation: accommodation ?? null,
+      flexible: flexible ?? null,
     };
   });
 
@@ -120,16 +137,22 @@ export const updateExistingVolunteerAvailability = createServerFn({ method: "POS
 
       // 1. Fechas: sólo futuras y sin duplicados
       const today = new Date().toISOString().slice(0, 10);
-      const requested = Array.from(new Set(data.dates.filter((d) => d >= today))).sort();
+      const requested =
+        data.availability_mode === "flexible"
+          ? []
+          : Array.from(new Set(data.dates.filter((d) => d >= today))).sort();
 
-      const { data: existingDates, error: datesError } = await supabaseAdmin
-        .from("availability")
-        .select("available_date")
-        .eq("volunteer_id", volunteerId)
-        .in("available_date", requested);
-      if (datesError) throw datesError;
+      let already = new Set<string>();
+      if (requested.length > 0) {
+        const { data: existingDates, error: datesError } = await supabaseAdmin
+          .from("availability")
+          .select("available_date")
+          .eq("volunteer_id", volunteerId)
+          .in("available_date", requested);
+        if (datesError) throw datesError;
+        already = new Set((existingDates ?? []).map((r) => r.available_date));
+      }
 
-      const already = new Set((existingDates ?? []).map((r) => r.available_date));
       const toInsert = requested.filter((d) => !already.has(d));
 
       if (toInsert.length > 0) {
@@ -147,6 +170,41 @@ export const updateExistingVolunteerAvailability = createServerFn({ method: "POS
         );
         if (insertError) throw insertError;
       }
+
+      // 1b. Disponibilidad flexible: se reemplaza la regla activa del voluntario
+      let flexibleSaved = false;
+      if (data.availability_mode === "flexible" && data.flexible) {
+        const rule = normalizeFlexibleRule(data.flexible);
+
+        const { data: currentRule } = await supabaseAdmin
+          .from("flexible_availability")
+          .select("id")
+          .eq("volunteer_id", volunteerId)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (currentRule) {
+          const { error: updErr } = await supabaseAdmin
+            .from("flexible_availability")
+            .update(rule)
+            .eq("id", currentRule.id);
+          if (updErr) throw updErr;
+        } else {
+          const { error: insErr } = await supabaseAdmin
+            .from("flexible_availability")
+            .insert({ ...rule, volunteer_id: volunteerId });
+          if (insErr) throw insErr;
+        }
+        flexibleSaved = true;
+
+        await supabaseAdmin.from("audit_logs").insert({
+          action: "UPDATE_FLEXIBLE_PUBLIC",
+          table_name: "flexible_availability",
+          record_id: volunteerId,
+          new_value: rule as any,
+        });
+      }
+
 
       // 2. Habilidades (sólo si el voluntario decidió editarlas)
       let skillsUpdated = false;
@@ -218,6 +276,7 @@ export const updateExistingVolunteerAvailability = createServerFn({ method: "POS
         addedDates: toInsert,
         skippedDates: requested.filter((d) => already.has(d)),
         skillsUpdated,
+        flexibleSaved,
       };
     } catch (err: any) {
       console.error("UPDATE_AVAILABILITY_ERROR:", err);
