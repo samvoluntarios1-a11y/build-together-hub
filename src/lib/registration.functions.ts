@@ -79,15 +79,29 @@ export const submitRegistration = createServerFn({ method: "POST" })
         if (skillsError) throw skillsError;
       }
 
-      // 4. Insertar Disponibilidad
-      const { error: availError } = await supabaseAdmin
-        .from("availability")
-        .insert(data.dates.map(d => ({
-          volunteer_id: volunteerId,
-          available_date: d,
-          is_available: true,
-        })));
-      if (availError) throw availError;
+      // 4. Insertar Disponibilidad (fechas específicas o regla flexible)
+      if (data.availability_mode === "flexible" && data.flexible) {
+        const rule = normalizeFlexibleRule(data.flexible);
+        const { error: flexError } = await supabaseAdmin
+          .from("flexible_availability")
+          .insert({ ...rule, volunteer_id: volunteerId });
+        if (flexError) throw flexError;
+      } else {
+        const { error: availError } = await supabaseAdmin
+          .from("availability")
+          .insert(data.dates.map(d => {
+            const dt = new Date(d + "T00:00:00");
+            return {
+              volunteer_id: volunteerId,
+              available_date: d,
+              is_available: true,
+              month: dt.getMonth() + 1,
+              year: dt.getFullYear(),
+            };
+          }));
+        if (availError) throw availError;
+      }
+
 
       // 5. Alojamiento
       if (data.needs_accommodation) {
