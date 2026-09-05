@@ -137,16 +137,22 @@ export const updateExistingVolunteerAvailability = createServerFn({ method: "POS
 
       // 1. Fechas: sólo futuras y sin duplicados
       const today = new Date().toISOString().slice(0, 10);
-      const requested = Array.from(new Set(data.dates.filter((d) => d >= today))).sort();
+      const requested =
+        data.availability_mode === "flexible"
+          ? []
+          : Array.from(new Set(data.dates.filter((d) => d >= today))).sort();
 
-      const { data: existingDates, error: datesError } = await supabaseAdmin
-        .from("availability")
-        .select("available_date")
-        .eq("volunteer_id", volunteerId)
-        .in("available_date", requested);
-      if (datesError) throw datesError;
+      let already = new Set<string>();
+      if (requested.length > 0) {
+        const { data: existingDates, error: datesError } = await supabaseAdmin
+          .from("availability")
+          .select("available_date")
+          .eq("volunteer_id", volunteerId)
+          .in("available_date", requested);
+        if (datesError) throw datesError;
+        already = new Set((existingDates ?? []).map((r) => r.available_date));
+      }
 
-      const already = new Set((existingDates ?? []).map((r) => r.available_date));
       const toInsert = requested.filter((d) => !already.has(d));
 
       if (toInsert.length > 0) {
@@ -164,6 +170,41 @@ export const updateExistingVolunteerAvailability = createServerFn({ method: "POS
         );
         if (insertError) throw insertError;
       }
+
+      // 1b. Disponibilidad flexible: se reemplaza la regla activa del voluntario
+      let flexibleSaved = false;
+      if (data.availability_mode === "flexible" && data.flexible) {
+        const rule = normalizeFlexibleRule(data.flexible);
+
+        const { data: currentRule } = await supabaseAdmin
+          .from("flexible_availability")
+          .select("id")
+          .eq("volunteer_id", volunteerId)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (currentRule) {
+          const { error: updErr } = await supabaseAdmin
+            .from("flexible_availability")
+            .update(rule)
+            .eq("id", currentRule.id);
+          if (updErr) throw updErr;
+        } else {
+          const { error: insErr } = await supabaseAdmin
+            .from("flexible_availability")
+            .insert({ ...rule, volunteer_id: volunteerId });
+          if (insErr) throw insErr;
+        }
+        flexibleSaved = true;
+
+        await supabaseAdmin.from("audit_logs").insert({
+          action: "UPDATE_FLEXIBLE_PUBLIC",
+          table_name: "flexible_availability",
+          record_id: volunteerId,
+          new_value: rule as any,
+        });
+      }
+
 
       // 2. Habilidades (sólo si el voluntario decidió editarlas)
       let skillsUpdated = false;
