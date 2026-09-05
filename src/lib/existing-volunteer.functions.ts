@@ -64,19 +64,26 @@ export const checkVolunteerRegistrationStatus = createServerFn({ method: "POST" 
     // La identificación es únicamente por número de voluntario.
     // El nombre y la localidad pueden cambiar y se actualizan al enviar.
 
-    const [{ data: skills }, { data: accommodation }] = await Promise.all([
-      supabaseAdmin
-        .from("volunteer_skills")
-        .select("category_id, skill_level, years_experience, description")
-        .eq("volunteer_id", profile.id),
-      supabaseAdmin
-        .from("accommodation_requests")
-        .select(
-          "needs_accommodation, locality_origin, dates_needed_start, dates_needed_end, special_requirements",
-        )
-        .eq("volunteer_id", profile.id)
-        .maybeSingle(),
-    ]);
+    const [{ data: skills }, { data: accommodation }, { data: flexible }] =
+      await Promise.all([
+        supabaseAdmin
+          .from("volunteer_skills")
+          .select("category_id, skill_level, years_experience, description")
+          .eq("volunteer_id", profile.id),
+        supabaseAdmin
+          .from("accommodation_requests")
+          .select(
+            "needs_accommodation, locality_origin, dates_needed_start, dates_needed_end, special_requirements",
+          )
+          .eq("volunteer_id", profile.id)
+          .maybeSingle(),
+        supabaseAdmin
+          .from("flexible_availability")
+          .select("*")
+          .eq("volunteer_id", profile.id)
+          .eq("is_active", true)
+          .maybeSingle(),
+      ]);
 
     return {
       exists: true as const,
@@ -89,6 +96,7 @@ export const checkVolunteerRegistrationStatus = createServerFn({ method: "POST" 
       },
       skills: skills ?? [],
       accommodation: accommodation ?? null,
+      flexible: flexible ?? null,
     };
   });
 
