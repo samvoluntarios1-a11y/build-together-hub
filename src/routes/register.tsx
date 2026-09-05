@@ -73,6 +73,7 @@ interface ExistingInfo {
     dates_needed_end: string | null;
     special_requirements: string | null;
   } | null;
+  flexible: FlexibleRule | null;
 }
 
 interface Draft {
@@ -80,7 +81,9 @@ interface Draft {
   full_name: string;
   locality: string;
   skills: SkillDraft[];
+  availability_mode: "dates" | "flexible";
   dates: string[];
+  flexible: FlexibleDraft;
   needs_accommodation: boolean;
   locality_origin: string;
   dates_needed_start: string;
@@ -94,6 +97,7 @@ interface StepErrors {
   locality?: string;
   skills?: string;
   dates?: string;
+  flexible?: string;
   locality_origin?: string;
   dates_needed_start?: string;
   dates_needed_end?: string;
@@ -104,7 +108,9 @@ const EMPTY_DRAFT: Draft = {
   full_name: "",
   locality: "",
   skills: [],
+  availability_mode: "dates",
   dates: [],
+  flexible: EMPTY_FLEXIBLE,
   needs_accommodation: false,
   locality_origin: "",
   dates_needed_start: "",
