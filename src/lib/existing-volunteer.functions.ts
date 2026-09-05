@@ -276,6 +276,7 @@ export const updateExistingVolunteerAvailability = createServerFn({ method: "POS
         addedDates: toInsert,
         skippedDates: requested.filter((d) => already.has(d)),
         skillsUpdated,
+        flexibleSaved,
       };
     } catch (err: any) {
       console.error("UPDATE_AVAILABILITY_ERROR:", err);
