@@ -918,7 +918,64 @@ function RegisterPage() {
         {step === 2 && (
           <section className="space-y-4">
             <div className="card-soft p-6 sm:p-8">
-              <h1 className="text-2xl font-extrabold tracking-tight">¿Qué días podés venir?</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight">¿Cuándo podés colaborar?</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Elegí la forma que mejor se adapte a vos. Después vas a poder actualizarla con tu
+                número de voluntario.
+              </p>
+
+              {/* Selector de tipo de disponibilidad */}
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => set("availability_mode", "dates")}
+                  aria-pressed={draft.availability_mode === "dates"}
+                  className={[
+                    "flex flex-col items-start gap-1.5 rounded-2xl border-2 p-4 text-left transition",
+                    draft.availability_mode === "dates"
+                      ? "border-accent bg-accent/10"
+                      : "border-border bg-card",
+                  ].join(" ")}
+                >
+                  <CalendarDays className="h-6 w-6 text-accent" />
+                  <span className="font-bold">Fechas específicas</span>
+                  <span className="text-sm text-muted-foreground">
+                    Marcá en el calendario los días exactos en los que podés venir.
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => set("availability_mode", "flexible")}
+                  aria-pressed={draft.availability_mode === "flexible"}
+                  className={[
+                    "flex flex-col items-start gap-1.5 rounded-2xl border-2 p-4 text-left transition",
+                    draft.availability_mode === "flexible"
+                      ? "border-accent bg-accent/10"
+                      : "border-border bg-card",
+                  ].join(" ")}
+                >
+                  <ClipboardCheck className="h-6 w-6 text-accent" />
+                  <span className="font-bold">Disponibilidad flexible</span>
+                  <span className="text-sm text-muted-foreground">
+                    Contanos con qué frecuencia y qué días te quedan mejor, y te avisamos.
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {draft.availability_mode === "flexible" ? (
+              <div className="card-soft p-6 sm:p-8">
+                <FlexibleAvailabilityForm
+                  value={draft.flexible}
+                  onChange={(next) => set("flexible", next)}
+                  minDate={todayISO()}
+                  error={errors.flexible}
+                />
+              </div>
+            ) : (
+              <>
+            <div className="card-soft p-6 sm:p-8">
+              <h2 className="text-lg font-extrabold tracking-tight">¿Qué días podés venir?</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Tocá los días del calendario en los que estás disponible (se marcan en verde).
                 Podés navegar el calendario y marcar tus días disponibles.
