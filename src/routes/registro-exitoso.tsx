@@ -6,6 +6,8 @@ export interface SuccessSearch {
   n: string;
   nombre: string;
   dias: number;
+  tipo?: "registro" | "actualizacion";
+  modo?: "fechas" | "flexible";
 }
 
 export const Route = createFileRoute("/registro-exitoso")({
@@ -13,6 +15,8 @@ export const Route = createFileRoute("/registro-exitoso")({
     n: String(search["n"] ?? ""),
     nombre: String(search["nombre"] ?? ""),
     dias: Number(search["dias"] ?? 0),
+    tipo: search["tipo"] === "actualizacion" ? "actualizacion" : "registro",
+    modo: search["modo"] === "flexible" ? "flexible" : "fechas",
   }),
   head: () => ({
     meta: [
@@ -24,7 +28,8 @@ export const Route = createFileRoute("/registro-exitoso")({
 });
 
 function SuccessPage() {
-  const { n, nombre, dias } = Route.useSearch();
+  const { n, nombre, dias, tipo, modo } = Route.useSearch();
+  const isUpdate = tipo === "actualizacion";
   const today = new Date().toLocaleDateString("es-AR", {
     day: "2-digit",
     month: "long",
@@ -40,7 +45,7 @@ function SuccessPage() {
             <AppLogo variant="default" showText={false} iconClassName="h-6 w-6" />
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Comprobante de registro
+                {isUpdate ? "Comprobante de actualización" : "Comprobante de registro"}
               </p>
               <p className="font-extrabold text-primary">Voluntarios LDC</p>
             </div>
@@ -49,28 +54,42 @@ function SuccessPage() {
           <div className="py-6 text-center">
             <CheckCircle2 className="mx-auto h-16 w-16 text-success" />
             <h1 className="mt-4 text-2xl font-extrabold tracking-tight">
-              ¡Gracias por registrarte{nombre ? `, ${nombre.split(" ")[0]}` : ""}!
+              {isUpdate
+                ? `¡Listo${nombre ? `, ${nombre.split(" ")[0]}` : ""}!`
+                : `¡Gracias por registrarte${nombre ? `, ${nombre.split(" ")[0]}` : ""}!`}
             </h1>
             <p className="mt-2 text-muted-foreground">
-              Tu número de voluntario es
+              {isUpdate
+                ? "Actualizamos tu disponibilidad. Tu número de voluntario sigue siendo"
+                : "Tu número de voluntario es"}
             </p>
             <p className="mt-2 rounded-2xl bg-primary py-4 text-4xl font-extrabold tracking-wide text-primary-foreground">
               #{n ?? "—"}
             </p>
             <p className="mt-3 text-sm text-muted-foreground">
               Guardalo: te lo van a pedir al ingresar a los voluntarios.
-              {typeof dias === "number" && dias > 0 && (
+              {modo === "flexible" ? (
                 <>
                   <br />
-                  Registraste <strong>{dias}</strong>{" "}
-                  {dias === 1 ? "día disponible" : "días disponibles"}.
+                  Registraste una <strong>disponibilidad flexible</strong>: te vamos a
+                  contactar según la frecuencia que indicaste.
                 </>
+              ) : (
+                typeof dias === "number" && dias > 0 && (
+                  <>
+                    <br />
+                    {isUpdate ? "Agregaste" : "Registraste"} <strong>{dias}</strong>{" "}
+                    {dias === 1 ? "día disponible" : "días disponibles"}.
+                  </>
+                )
               )}
             </p>
           </div>
 
           <div className="flex items-center justify-between border-t border-border pt-4 text-xs text-muted-foreground">
-            <span>Fecha de registro: {today}</span>
+            <span>
+              {isUpdate ? "Fecha de actualización" : "Fecha de registro"}: {today}
+            </span>
             <span>voluntarios-ldc</span>
           </div>
         </div>
