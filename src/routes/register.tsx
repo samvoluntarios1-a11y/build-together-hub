@@ -1249,8 +1249,9 @@ function RegisterPage() {
                 className="mt-1 h-5 w-5 accent-[#00b8dd]"
               />
               <span className="text-sm font-semibold">
-                Confirmo que todos los datos son correctos y quiero registrarme como
-                voluntario.
+                {isUpdate
+                  ? "Confirmo que los datos son correctos y quiero actualizar mi disponibilidad."
+                  : "Confirmo que todos los datos son correctos y quiero registrarme como voluntario."}
               </span>
             </label>
           </section>
@@ -1290,6 +1291,8 @@ function RegisterPage() {
                   <Loader2 className="h-5 w-5 animate-spin" />
                   Enviando…
                 </>
+              ) : isUpdate ? (
+                "Guardar cambios"
               ) : (
                 "Enviar registro"
               )}
