@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { type AssignmentStatus, type SkillLevel } from "./types";
+import {
+  ruleCoversDate,
+  quotaWindow,
+  toFlexibleRule,
+  type FlexibleRule,
+} from "./flexible";
 
 const assignmentSchema = z.object({
   volunteer_id: z.string().uuid(),
@@ -8,6 +14,10 @@ const assignmentSchema = z.object({
   assignment_date: z.string(),
   notes: z.string().optional().nullable(),
   status: z.enum(["assigned", "confirmed", "cancelled", "completed"]).default("assigned"),
+  availability_source: z.enum(["specific_date", "flexible_rule", "manual"]).optional(),
+  flexible_rule_id: z.string().uuid().nullable().optional(),
+  is_override: z.boolean().optional(),
+  override_reason: z.string().nullable().optional(),
 });
 
 const bulkAssignmentSchema = z.object({

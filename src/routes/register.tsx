@@ -25,6 +25,16 @@ import {
   updateExistingVolunteerAvailability,
 } from "@/lib/existing-volunteer.functions";
 import { AvailabilityCalendar } from "@/components/register/AvailabilityCalendar";
+import {
+  FlexibleAvailabilityForm,
+  EMPTY_FLEXIBLE,
+  type FlexibleDraft,
+} from "@/components/register/FlexibleAvailabilityForm";
+import {
+  describeFlexible,
+  toFlexibleRule,
+  type FlexibleRule,
+} from "@/lib/flexible";
 import { CategoryIcon } from "@/lib/icons";
 import { AppLogo } from "@/components/AppLogo";
 import {
@@ -262,12 +272,14 @@ function RegisterPage() {
         description: s.description ?? "",
       }));
 
+      const existingRule = res.flexible ? toFlexibleRule(res.flexible) : null;
       setExisting({
         profileId: res.profileId!,
         full_name: res.volunteer!.full_name,
         locality: res.volunteer!.locality,
         skills,
         accommodation: res.accommodation ?? null,
+        flexible: existingRule,
       });
       setEditSkills(false);
       setNumberOk(null);
@@ -276,6 +288,20 @@ function RegisterPage() {
         full_name: d.full_name.trim() || res.volunteer!.full_name,
         locality: d.locality.trim() || res.volunteer!.locality,
         skills: skills.length > 0 ? skills : d.skills,
+        // Si ya tenía una regla flexible, la precargamos para editarla
+        availability_mode: existingRule ? "flexible" : d.availability_mode,
+        flexible: existingRule
+          ? {
+              frequency_type: existingRule.frequency_type,
+              max_occurrences: existingRule.max_occurrences ?? 1,
+              start_date: existingRule.start_date ?? "",
+              end_date: existingRule.end_date ?? "",
+              preferred_days: existingRule.preferred_days ?? [],
+              is_any_day: existingRule.is_any_day,
+              preferred_shift: existingRule.preferred_shift ?? "",
+              notes: existingRule.notes ?? "",
+            }
+          : d.flexible,
         needs_accommodation: res.accommodation?.needs_accommodation ?? d.needs_accommodation,
         locality_origin: res.accommodation?.locality_origin ?? d.locality_origin,
         dates_needed_start: res.accommodation?.dates_needed_start ?? d.dates_needed_start,
@@ -307,8 +333,21 @@ function RegisterPage() {
     if (s === 1 && draft.skills.length === 0) {
       e.skills = "Agregá al menos una habilidad";
     }
-    if (s === 2 && draft.dates.length === 0) {
-      e.dates = "Seleccioná al menos 1 día disponible";
+    if (s === 2) {
+      if (draft.availability_mode === "dates") {
+        if (draft.dates.length === 0) {
+          e.dates = "Seleccioná al menos 1 día disponible";
+        }
+      } else {
+        const f = draft.flexible;
+        if (!f.is_any_day && f.preferred_days.length === 0) {
+          e.flexible = "Elegí al menos un día de la semana o marcá 'cualquier día'";
+        } else if (f.frequency_type !== "unlimited" && (!f.max_occurrences || f.max_occurrences < 1)) {
+          e.flexible = "Indicá cuántos días podés colaborar en ese período";
+        } else if (f.start_date && f.end_date && f.end_date < f.start_date) {
+          e.flexible = "La fecha de fin debe ser posterior a la de inicio";
+        }
+      }
     }
     if (s === 3 && draft.needs_accommodation) {
       if (!draft.locality_origin.trim())
@@ -414,6 +453,21 @@ function RegisterPage() {
     setSkillForm(null);
   }
 
+  function flexiblePayload() {
+    if (draft.availability_mode !== "flexible") return null;
+    const f = draft.flexible;
+    return {
+      frequency_type: f.frequency_type,
+      max_occurrences: f.frequency_type === "unlimited" ? null : f.max_occurrences,
+      start_date: f.start_date || null,
+      end_date: f.end_date || null,
+      preferred_days: f.is_any_day ? [] : f.preferred_days,
+      is_any_day: f.is_any_day,
+      preferred_shift: f.preferred_shift || null,
+      notes: f.notes.trim() || null,
+    };
+  }
+
   async function submit() {
     if (!confirm) {
       toast.error("Confirmá que todos los datos son correctos");
@@ -421,6 +475,49 @@ function RegisterPage() {
     }
     setSubmitting(true);
     try {
+      // --- Actualización de voluntario ya registrado ---
+      if (isUpdate) {
+        const result = await updateExistingVolunteerAvailability({
+          data: {
+            volunteer_number: draft.volunteer_number,
+            full_name: draft.full_name,
+            locality: draft.locality,
+            availability_mode: draft.availability_mode,
+            dates: draft.dates,
+            flexible: flexiblePayload(),
+            edited_skills: editSkills,
+            skills: editSkills ? draft.skills : undefined,
+            needs_accommodation: draft.needs_accommodation,
+            locality_origin: draft.locality_origin,
+            dates_needed_start: draft.dates_needed_start,
+            dates_needed_end: draft.dates_needed_end,
+            special_requirements: draft.special_requirements,
+          },
+        });
+
+        if (!result.success) {
+          console.error("UPDATE_SUBMIT_ERROR:", result);
+          toast.error("No pudimos guardar los cambios", {
+            description: result.error || "Ocurrió un error inesperado. Tus datos siguen guardados.",
+          });
+          return;
+        }
+
+        localStorage.removeItem(DRAFT_KEY);
+        navigate({
+          to: "/registro-exitoso",
+          search: {
+            n: draft.volunteer_number.trim(),
+            nombre: draft.full_name.trim(),
+            dias: result.addedDates?.length ?? 0,
+            tipo: "actualizacion",
+            modo: draft.availability_mode === "flexible" ? "flexible" : "fechas",
+          } as SuccessSearch,
+        });
+        return;
+      }
+
+      // --- Registro nuevo ---
       const result = await submitRegistration({
         data: {
           volunteer_number: draft.volunteer_number,
@@ -428,6 +525,8 @@ function RegisterPage() {
           locality: draft.locality,
           skills: draft.skills,
           dates: draft.dates,
+          availability_mode: draft.availability_mode,
+          flexible: flexiblePayload(),
           needs_accommodation: draft.needs_accommodation,
           locality_origin: draft.locality_origin,
           dates_needed_start: draft.dates_needed_start,
@@ -461,6 +560,7 @@ function RegisterPage() {
           n: draft.volunteer_number.trim(),
           nombre: draft.full_name.trim(),
           dias: draft.dates.length,
+          modo: draft.availability_mode === "flexible" ? "flexible" : "fechas",
         } as SuccessSearch,
       });
     } catch (err: any) {
@@ -818,7 +918,64 @@ function RegisterPage() {
         {step === 2 && (
           <section className="space-y-4">
             <div className="card-soft p-6 sm:p-8">
-              <h1 className="text-2xl font-extrabold tracking-tight">¿Qué días podés venir?</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight">¿Cuándo podés colaborar?</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Elegí la forma que mejor se adapte a vos. Después vas a poder actualizarla con tu
+                número de voluntario.
+              </p>
+
+              {/* Selector de tipo de disponibilidad */}
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => set("availability_mode", "dates")}
+                  aria-pressed={draft.availability_mode === "dates"}
+                  className={[
+                    "flex flex-col items-start gap-1.5 rounded-2xl border-2 p-4 text-left transition",
+                    draft.availability_mode === "dates"
+                      ? "border-accent bg-accent/10"
+                      : "border-border bg-card",
+                  ].join(" ")}
+                >
+                  <CalendarDays className="h-6 w-6 text-accent" />
+                  <span className="font-bold">Fechas específicas</span>
+                  <span className="text-sm text-muted-foreground">
+                    Marcá en el calendario los días exactos en los que podés venir.
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => set("availability_mode", "flexible")}
+                  aria-pressed={draft.availability_mode === "flexible"}
+                  className={[
+                    "flex flex-col items-start gap-1.5 rounded-2xl border-2 p-4 text-left transition",
+                    draft.availability_mode === "flexible"
+                      ? "border-accent bg-accent/10"
+                      : "border-border bg-card",
+                  ].join(" ")}
+                >
+                  <ClipboardCheck className="h-6 w-6 text-accent" />
+                  <span className="font-bold">Disponibilidad flexible</span>
+                  <span className="text-sm text-muted-foreground">
+                    Contanos con qué frecuencia y qué días te quedan mejor, y te avisamos.
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {draft.availability_mode === "flexible" ? (
+              <div className="card-soft p-6 sm:p-8">
+                <FlexibleAvailabilityForm
+                  value={draft.flexible}
+                  onChange={(next) => set("flexible", next)}
+                  minDate={todayISO()}
+                  error={errors.flexible}
+                />
+              </div>
+            ) : (
+              <>
+            <div className="card-soft p-6 sm:p-8">
+              <h2 className="text-lg font-extrabold tracking-tight">¿Qué días podés venir?</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Tocá los días del calendario en los que estás disponible (se marcan en verde).
                 Podés navegar el calendario y marcar tus días disponibles.
@@ -877,6 +1034,8 @@ function RegisterPage() {
               )}
             </div>
             {errors.dates && <p className="text-sm text-destructive">{errors.dates}</p>}
+              </>
+            )}
           </section>
         )}
 
@@ -975,9 +1134,13 @@ function RegisterPage() {
         {step === 4 && (
           <section className="space-y-4">
             <div className="card-soft p-6 sm:p-8">
-              <h1 className="text-2xl font-extrabold tracking-tight">Revisá tu registro</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight">
+                {isUpdate ? "Revisá tu actualización" : "Revisá tu registro"}
+              </h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Verificá que esté todo correcto antes de enviar.
+                {isUpdate
+                  ? "Verificá tu nueva disponibilidad antes de guardar. Tus habilidades se conservan salvo que las hayas editado."
+                  : "Verificá que esté todo correcto antes de enviar."}
               </p>
             </div>
 
@@ -1037,15 +1200,22 @@ function RegisterPage() {
                   Editar
                 </button>
               </div>
-              <p className="mt-2 text-sm">
-                <span className="text-lg font-extrabold text-primary">{draft.dates.length}</span>{" "}
-                días disponibles
-                {draft.dates.length > 0 && (
-                  <span className="text-muted-foreground">
-                    {" "}— del {formatDate(draft.dates[0]!)} al {formatDate(draft.dates[draft.dates.length - 1]!)}
-                  </span>
-                )}
-              </p>
+              {draft.availability_mode === "flexible" ? (
+                <p className="mt-2 text-sm">
+                  <span className="font-semibold text-primary">Disponibilidad flexible</span>
+                  <span className="text-muted-foreground"> — {describeFlexible(flexiblePayload() as any)}</span>
+                </p>
+              ) : (
+                <p className="mt-2 text-sm">
+                  <span className="text-lg font-extrabold text-primary">{draft.dates.length}</span>{" "}
+                  días disponibles
+                  {draft.dates.length > 0 && (
+                    <span className="text-muted-foreground">
+                      {" "}— del {formatDate(draft.dates[0]!)} al {formatDate(draft.dates[draft.dates.length - 1]!)}
+                    </span>
+                  )}
+                </p>
+              )}
             </div>
 
             <div className="card-soft p-5">
@@ -1079,8 +1249,9 @@ function RegisterPage() {
                 className="mt-1 h-5 w-5 accent-[#00b8dd]"
               />
               <span className="text-sm font-semibold">
-                Confirmo que todos los datos son correctos y quiero registrarme como
-                voluntario.
+                {isUpdate
+                  ? "Confirmo que los datos son correctos y quiero actualizar mi disponibilidad."
+                  : "Confirmo que todos los datos son correctos y quiero registrarme como voluntario."}
               </span>
             </label>
           </section>
@@ -1120,6 +1291,8 @@ function RegisterPage() {
                   <Loader2 className="h-5 w-5 animate-spin" />
                   Enviando…
                 </>
+              ) : isUpdate ? (
+                "Guardar cambios"
               ) : (
                 "Enviar registro"
               )}
