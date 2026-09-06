@@ -453,6 +453,21 @@ function RegisterPage() {
     setSkillForm(null);
   }
 
+  function flexiblePayload() {
+    if (draft.availability_mode !== "flexible") return null;
+    const f = draft.flexible;
+    return {
+      frequency_type: f.frequency_type,
+      max_occurrences: f.frequency_type === "unlimited" ? null : f.max_occurrences,
+      start_date: f.start_date || null,
+      end_date: f.end_date || null,
+      preferred_days: f.is_any_day ? [] : f.preferred_days,
+      is_any_day: f.is_any_day,
+      preferred_shift: f.preferred_shift || null,
+      notes: f.notes.trim() || null,
+    };
+  }
+
   async function submit() {
     if (!confirm) {
       toast.error("Confirmá que todos los datos son correctos");
@@ -460,6 +475,49 @@ function RegisterPage() {
     }
     setSubmitting(true);
     try {
+      // --- Actualización de voluntario ya registrado ---
+      if (isUpdate) {
+        const result = await updateExistingVolunteerAvailability({
+          data: {
+            volunteer_number: draft.volunteer_number,
+            full_name: draft.full_name,
+            locality: draft.locality,
+            availability_mode: draft.availability_mode,
+            dates: draft.dates,
+            flexible: flexiblePayload(),
+            edited_skills: editSkills,
+            skills: editSkills ? draft.skills : undefined,
+            needs_accommodation: draft.needs_accommodation,
+            locality_origin: draft.locality_origin,
+            dates_needed_start: draft.dates_needed_start,
+            dates_needed_end: draft.dates_needed_end,
+            special_requirements: draft.special_requirements,
+          },
+        });
+
+        if (!result.success) {
+          console.error("UPDATE_SUBMIT_ERROR:", result);
+          toast.error("No pudimos guardar los cambios", {
+            description: result.error || "Ocurrió un error inesperado. Tus datos siguen guardados.",
+          });
+          return;
+        }
+
+        localStorage.removeItem(DRAFT_KEY);
+        navigate({
+          to: "/registro-exitoso",
+          search: {
+            n: draft.volunteer_number.trim(),
+            nombre: draft.full_name.trim(),
+            dias: result.addedDates?.length ?? 0,
+            tipo: "actualizacion",
+            modo: draft.availability_mode === "flexible" ? "flexible" : "fechas",
+          } as SuccessSearch,
+        });
+        return;
+      }
+
+      // --- Registro nuevo ---
       const result = await submitRegistration({
         data: {
           volunteer_number: draft.volunteer_number,
@@ -467,6 +525,8 @@ function RegisterPage() {
           locality: draft.locality,
           skills: draft.skills,
           dates: draft.dates,
+          availability_mode: draft.availability_mode,
+          flexible: flexiblePayload(),
           needs_accommodation: draft.needs_accommodation,
           locality_origin: draft.locality_origin,
           dates_needed_start: draft.dates_needed_start,
@@ -500,6 +560,7 @@ function RegisterPage() {
           n: draft.volunteer_number.trim(),
           nombre: draft.full_name.trim(),
           dias: draft.dates.length,
+          modo: draft.availability_mode === "flexible" ? "flexible" : "fechas",
         } as SuccessSearch,
       });
     } catch (err: any) {
