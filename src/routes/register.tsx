@@ -333,8 +333,21 @@ function RegisterPage() {
     if (s === 1 && draft.skills.length === 0) {
       e.skills = "Agregá al menos una habilidad";
     }
-    if (s === 2 && draft.dates.length === 0) {
-      e.dates = "Seleccioná al menos 1 día disponible";
+    if (s === 2) {
+      if (draft.availability_mode === "dates") {
+        if (draft.dates.length === 0) {
+          e.dates = "Seleccioná al menos 1 día disponible";
+        }
+      } else {
+        const f = draft.flexible;
+        if (!f.is_any_day && f.preferred_days.length === 0) {
+          e.flexible = "Elegí al menos un día de la semana o marcá 'cualquier día'";
+        } else if (f.frequency_type !== "unlimited" && (!f.max_occurrences || f.max_occurrences < 1)) {
+          e.flexible = "Indicá cuántos días podés colaborar en ese período";
+        } else if (f.start_date && f.end_date && f.end_date < f.start_date) {
+          e.flexible = "La fecha de fin debe ser posterior a la de inicio";
+        }
+      }
     }
     if (s === 3 && draft.needs_accommodation) {
       if (!draft.locality_origin.trim())
