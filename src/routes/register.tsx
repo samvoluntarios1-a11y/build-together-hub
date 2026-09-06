@@ -1134,9 +1134,13 @@ function RegisterPage() {
         {step === 4 && (
           <section className="space-y-4">
             <div className="card-soft p-6 sm:p-8">
-              <h1 className="text-2xl font-extrabold tracking-tight">Revisá tu registro</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight">
+                {isUpdate ? "Revisá tu actualización" : "Revisá tu registro"}
+              </h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Verificá que esté todo correcto antes de enviar.
+                {isUpdate
+                  ? "Verificá tu nueva disponibilidad antes de guardar. Tus habilidades se conservan salvo que las hayas editado."
+                  : "Verificá que esté todo correcto antes de enviar."}
               </p>
             </div>
 
@@ -1196,15 +1200,22 @@ function RegisterPage() {
                   Editar
                 </button>
               </div>
-              <p className="mt-2 text-sm">
-                <span className="text-lg font-extrabold text-primary">{draft.dates.length}</span>{" "}
-                días disponibles
-                {draft.dates.length > 0 && (
-                  <span className="text-muted-foreground">
-                    {" "}— del {formatDate(draft.dates[0]!)} al {formatDate(draft.dates[draft.dates.length - 1]!)}
-                  </span>
-                )}
-              </p>
+              {draft.availability_mode === "flexible" ? (
+                <p className="mt-2 text-sm">
+                  <span className="font-semibold text-primary">Disponibilidad flexible</span>
+                  <span className="text-muted-foreground"> — {describeFlexible(flexiblePayload() as any)}</span>
+                </p>
+              ) : (
+                <p className="mt-2 text-sm">
+                  <span className="text-lg font-extrabold text-primary">{draft.dates.length}</span>{" "}
+                  días disponibles
+                  {draft.dates.length > 0 && (
+                    <span className="text-muted-foreground">
+                      {" "}— del {formatDate(draft.dates[0]!)} al {formatDate(draft.dates[draft.dates.length - 1]!)}
+                    </span>
+                  )}
+                </p>
+              )}
             </div>
 
             <div className="card-soft p-5">
