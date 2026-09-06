@@ -1034,6 +1034,8 @@ function RegisterPage() {
               )}
             </div>
             {errors.dates && <p className="text-sm text-destructive">{errors.dates}</p>}
+              </>
+            )}
           </section>
         )}
 
