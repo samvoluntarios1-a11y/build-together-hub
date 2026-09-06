@@ -296,7 +296,7 @@ function RegisterPage() {
               max_occurrences: existingRule.max_occurrences ?? 1,
               start_date: existingRule.start_date ?? "",
               end_date: existingRule.end_date ?? "",
-              preferred_days: existingRule.preferred_days,
+              preferred_days: existingRule.preferred_days ?? [],
               is_any_day: existingRule.is_any_day,
               preferred_shift: existingRule.preferred_shift ?? "",
               notes: existingRule.notes ?? "",
