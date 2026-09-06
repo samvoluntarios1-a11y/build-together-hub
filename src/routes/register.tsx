@@ -272,12 +272,14 @@ function RegisterPage() {
         description: s.description ?? "",
       }));
 
+      const existingRule = res.flexible ? toFlexibleRule(res.flexible) : null;
       setExisting({
         profileId: res.profileId!,
         full_name: res.volunteer!.full_name,
         locality: res.volunteer!.locality,
         skills,
         accommodation: res.accommodation ?? null,
+        flexible: existingRule,
       });
       setEditSkills(false);
       setNumberOk(null);
@@ -286,6 +288,20 @@ function RegisterPage() {
         full_name: d.full_name.trim() || res.volunteer!.full_name,
         locality: d.locality.trim() || res.volunteer!.locality,
         skills: skills.length > 0 ? skills : d.skills,
+        // Si ya tenía una regla flexible, la precargamos para editarla
+        availability_mode: existingRule ? "flexible" : d.availability_mode,
+        flexible: existingRule
+          ? {
+              frequency_type: existingRule.frequency_type,
+              max_occurrences: existingRule.max_occurrences ?? 1,
+              start_date: existingRule.start_date ?? "",
+              end_date: existingRule.end_date ?? "",
+              preferred_days: existingRule.preferred_days,
+              is_any_day: existingRule.is_any_day,
+              preferred_shift: existingRule.preferred_shift ?? "",
+              notes: existingRule.notes ?? "",
+            }
+          : d.flexible,
         needs_accommodation: res.accommodation?.needs_accommodation ?? d.needs_accommodation,
         locality_origin: res.accommodation?.locality_origin ?? d.locality_origin,
         dates_needed_start: res.accommodation?.dates_needed_start ?? d.dates_needed_start,
