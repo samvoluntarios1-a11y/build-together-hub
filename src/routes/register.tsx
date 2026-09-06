@@ -25,6 +25,16 @@ import {
   updateExistingVolunteerAvailability,
 } from "@/lib/existing-volunteer.functions";
 import { AvailabilityCalendar } from "@/components/register/AvailabilityCalendar";
+import {
+  FlexibleAvailabilityForm,
+  EMPTY_FLEXIBLE,
+  type FlexibleDraft,
+} from "@/components/register/FlexibleAvailabilityForm";
+import {
+  describeFlexible,
+  toFlexibleRule,
+  type FlexibleRule,
+} from "@/lib/flexible";
 import { CategoryIcon } from "@/lib/icons";
 import { AppLogo } from "@/components/AppLogo";
 import {
