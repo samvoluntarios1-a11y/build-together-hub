@@ -407,12 +407,24 @@ function VolunteerCard({
           <Badge variant="outline" className="text-[9px] uppercase font-black text-red-500 border-red-200 bg-red-50">
             No disponible
           </Badge>
+        ) : isFlexible ? (
+          <>
+            <Badge variant="outline" className="text-[9px] uppercase font-black text-cyan border-cyan/30 bg-cyan/5">
+              Flexible
+            </Badge>
+            {volunteer.quota_max != null && (
+              <span className={`text-[9px] font-black uppercase ${volunteer.quota_full ? 'text-amber-600' : 'text-slate-400'}`}>
+                Cupo {volunteer.quota_used}/{volunteer.quota_max}
+              </span>
+            )}
+          </>
         ) : (
           <Badge variant="outline" className="text-[9px] uppercase font-black text-success border-success/30 bg-success/5">
             Disponible {format(parseISO(date), 'dd/MM')}
           </Badge>
         )}
       </div>
+
     </div>
   );
 }
