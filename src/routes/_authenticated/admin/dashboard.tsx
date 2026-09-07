@@ -62,6 +62,7 @@ function AdminDashboard() {
   
   // New date filters
   const [dateFilterMode, setDateFilterMode] = useState<"none" | "day" | "range" | "week" | "month">("none");
+  const [availTypeFilter, setAvailTypeFilter] = useState<"all" | "dates" | "flexible">("all");
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [dateRange, setDateRange] = useState<{from: string, to: string}>({
     from: format(new Date(), "yyyy-MM-dd"),
@@ -93,8 +94,9 @@ function AdminDashboard() {
   
   // Fetch volunteers with skills and availability
   const { data: volunteersData, isLoading } = useQuery({
-    queryKey: ["volunteers", page, searchTerm, localityFilter, categoryFilter, dateFilterMode, selectedDate, dateRange],
+    queryKey: ["volunteers", page, searchTerm, localityFilter, categoryFilter, dateFilterMode, selectedDate, dateRange, availTypeFilter],
     queryFn: async () => {
+      const useInnerAvailability = dateFilterMode !== "none" && availTypeFilter !== "flexible";
       let query = supabase
         .from("profiles")
         .select(`
@@ -107,7 +109,19 @@ function AdminDashboard() {
             description,
             work_categories (id, name, color, icon)
           ),
-          availability!inner (available_date, is_available),
+          availability${useInnerAvailability ? "!inner" : ""} (available_date, is_available),
+          flexible_availability (
+            id,
+            frequency_type,
+            max_occurrences,
+            start_date,
+            end_date,
+            preferred_days,
+            is_any_day,
+            preferred_shift,
+            notes,
+            is_active
+          ),
           accommodation_requests (
             id,
             needs_accommodation,
@@ -137,32 +151,51 @@ function AdminDashboard() {
         query = query.eq("volunteer_skills.category_id", categoryFilter);
       }
 
-      // Date filtering based on availability
-      query = query.eq("availability.is_available", true);
-
+      // Ventana de fechas seleccionada (si corresponde)
+      let windowFrom: string | null = null;
+      let windowTo: string | null = null;
       if (dateFilterMode === "day") {
-        query = query.eq("availability.available_date", selectedDate);
+        windowFrom = selectedDate;
+        windowTo = selectedDate;
       } else if (dateFilterMode === "range") {
-        query = query.gte("availability.available_date", dateRange.from)
-                     .lte("availability.available_date", dateRange.to);
+        windowFrom = dateRange.from;
+        windowTo = dateRange.to;
       } else if (dateFilterMode === "week") {
-        const start = startOfWeek(parseISO(selectedDate), { weekStartsOn: 1 });
-        const end = endOfWeek(parseISO(selectedDate), { weekStartsOn: 1 });
-        query = query.gte("availability.available_date", format(start, "yyyy-MM-dd"))
-                     .lte("availability.available_date", format(end, "yyyy-MM-dd"));
+        windowFrom = format(startOfWeek(parseISO(selectedDate), { weekStartsOn: 1 }), "yyyy-MM-dd");
+        windowTo = format(endOfWeek(parseISO(selectedDate), { weekStartsOn: 1 }), "yyyy-MM-dd");
       } else if (dateFilterMode === "month") {
-        const start = startOfMonth(parseISO(selectedDate));
-        const end = endOfMonth(parseISO(selectedDate));
-        query = query.gte("availability.available_date", format(start, "yyyy-MM-dd"))
-                     .lte("availability.available_date", format(end, "yyyy-MM-dd"));
+        windowFrom = format(startOfMonth(parseISO(selectedDate)), "yyyy-MM-dd");
+        windowTo = format(endOfMonth(parseISO(selectedDate)), "yyyy-MM-dd");
       }
 
-      const { data, error, count } = await query
+      if (availTypeFilter !== "flexible") {
+        query = query.eq("availability.is_available", true);
+        if (windowFrom && windowTo) {
+          query = query.gte("availability.available_date", windowFrom)
+                       .lte("availability.available_date", windowTo);
+        }
+      }
+
+      const { data, error } = await query
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       let processedData = data as unknown as VolunteerRow[];
+
+      // Filtro por tipo de disponibilidad
+      if (availTypeFilter !== "all") {
+        processedData = processedData.filter((v) => {
+          const rules = (v.flexible_availability ?? []).filter((r) => r.is_active);
+          const hasDates = (v.availability ?? []).length > 0;
+          if (availTypeFilter === "dates") return hasDates;
+          if (rules.length === 0) return false;
+          if (!windowFrom || !windowTo) return true;
+          // al menos un día de la ventana cubierto por alguna regla flexible
+          return eachDayOfInterval({ start: parseISO(windowFrom), end: parseISO(windowTo) })
+            .some((d) => rules.some((r) => ruleCoversDate(toFlexibleRule(r as any), format(d, "yyyy-MM-dd"))));
+        });
+      }
 
       // Clientside sorting by skill level if category filter is active
       if (categoryFilter) {
