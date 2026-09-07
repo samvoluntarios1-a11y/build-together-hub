@@ -17,7 +17,8 @@ import {
   ChevronUp,
   Loader2,
   CheckCircle2,
-  Info
+  Info,
+  Repeat
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
