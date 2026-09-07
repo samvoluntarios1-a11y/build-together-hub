@@ -44,7 +44,7 @@ export const getAssignmentRecommendations = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { date, categoryId, searchTerm } = data;
 
-    // 1. Get volunteers with the skill in that category
+    // 1. Voluntarios con la habilidad en esa categoría
     let query = supabaseAdmin
       .from("profiles")
       .select(`
@@ -62,6 +62,18 @@ export const getAssignmentRecommendations = createServerFn({ method: "GET" })
         availability (
           available_date,
           is_available
+        ),
+        flexible_availability (
+          id,
+          frequency_type,
+          max_occurrences,
+          start_date,
+          end_date,
+          preferred_days,
+          is_any_day,
+          preferred_shift,
+          notes,
+          is_active
         ),
         accommodation_requests (
           needs_accommodation
@@ -81,8 +93,9 @@ export const getAssignmentRecommendations = createServerFn({ method: "GET" })
     const { data: volunteers, error } = await query;
     if (error) throw error;
 
-    // 2. Process recommendations
+    // 2. Clasificar en tres grupos
     const recommended: any[] = [];
+    const flexible: any[] = [];
     const others: any[] = [];
 
     volunteers?.forEach((v: any) => {
@@ -97,12 +110,32 @@ export const getAssignmentRecommendations = createServerFn({ method: "GET" })
         (a: any) => a.assignment_date === date && a.category_id === categoryId
       );
 
-      // Exclude if already assigned to THIS category on THIS date
+      // Excluir si ya está asignado a ESTA categoría en ESTA fecha
       if (alreadyAssigned) return;
 
       const otherAssignment = v.calendar_assignments?.find(
         (a: any) => a.assignment_date === date
       );
+
+      // Regla flexible activa que cubra la fecha
+      const rules: FlexibleRule[] = (v.flexible_availability ?? [])
+        .map((r: any) => toFlexibleRule(r))
+        .filter((r: FlexibleRule) => r.is_active);
+      const rule = rules.find((r) => ruleCoversDate(r, date)) ?? null;
+
+      let quotaUsed = 0;
+      let quotaMax: number | null = null;
+      let quotaFull = false;
+      if (rule) {
+        const win = quotaWindow(rule, date);
+        if (win) {
+          quotaMax = rule.max_occurrences ?? 1;
+          quotaUsed = (v.calendar_assignments ?? []).filter(
+            (a: any) => a.assignment_date >= win.from && a.assignment_date <= win.to
+          ).length;
+          quotaFull = quotaUsed >= (quotaMax ?? 1);
+        }
+      }
 
       const volunteerInfo = {
         id: v.id,
@@ -114,29 +147,40 @@ export const getAssignmentRecommendations = createServerFn({ method: "GET" })
         description: skill.description,
         needs_accommodation: v.accommodation_requests?.[0]?.needs_accommodation || false,
         other_assignment: otherAssignment ? true : false,
-        other_assignment_info: otherAssignment ? { category_id: otherAssignment.category_id } : null
+        other_assignment_info: otherAssignment ? { category_id: otherAssignment.category_id } : null,
+        flexible_rule: rule,
+        flexible_rule_id: rule?.id ?? null,
+        quota_used: quotaUsed,
+        quota_max: quotaMax,
+        quota_full: quotaFull,
       };
 
       if (isAvailableExact) {
         recommended.push(volunteerInfo);
+      } else if (rule) {
+        flexible.push(volunteerInfo);
       } else {
         others.push(volunteerInfo);
       }
     });
 
-    // 3. Sort recommended
+    // 3. Ordenar
     const levelWeight: Record<string, number> = { primaria: 3, secundaria: 2, basica: 1 };
-    recommended.sort((a, b) => {
+    const byLevel = (a: any, b: any) => {
       const weightA = levelWeight[a.skill_level] || 0;
       const weightB = levelWeight[b.skill_level] || 0;
-      if (weightA !== weightB) {
-        return weightB - weightA;
-      }
+      if (weightA !== weightB) return weightB - weightA;
       return b.years_experience - a.years_experience;
+    };
+    recommended.sort(byLevel);
+    flexible.sort((a, b) => {
+      if (a.quota_full !== b.quota_full) return a.quota_full ? 1 : -1;
+      return byLevel(a, b);
     });
 
-    return { recommended, others };
+    return { recommended, flexible, others };
   });
+
 
 export const createBulkAssignments = createServerFn({ method: "POST" })
   .inputValidator((data) => bulkAssignmentSchema.parse(data))
@@ -172,8 +216,13 @@ export const createBulkAssignments = createServerFn({ method: "POST" })
             category_id: assignment.category_id,
             assignment_date: assignment.assignment_date,
             notes: assignment.notes ?? null,
-            status: assignment.status
+            status: assignment.status,
+            availability_source: assignment.availability_source ?? "specific_date",
+            flexible_rule_id: assignment.flexible_rule_id ?? null,
+            is_override: assignment.is_override ?? false,
+            override_reason: assignment.override_reason ?? null
           });
+
 
         if (error) throw error;
         results.successCount++;

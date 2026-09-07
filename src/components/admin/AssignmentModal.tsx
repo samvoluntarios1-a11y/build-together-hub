@@ -17,7 +17,8 @@ import {
   ChevronUp,
   Loader2,
   CheckCircle2,
-  Info
+  Info,
+  Repeat
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
@@ -67,18 +68,46 @@ export function AssignmentModal({
     enabled: !!categoryId && isOpen
   });
 
+  const volunteerIndex = useMemo(() => {
+    const map = new Map<string, any>();
+    [
+      ...(recommendations?.recommended ?? []),
+      ...(recommendations?.flexible ?? []),
+      ...(recommendations?.others ?? []),
+    ].forEach((v: any) => map.set(v.id, v));
+    return map;
+  }, [recommendations]);
+
   const mutation = useMutation({
     mutationFn: (volunteerIds: string[]) => createBulkAssignments({
       data: {
-        assignments: volunteerIds.map(id => ({
-          volunteer_id: id,
-          category_id: categoryId,
-          assignment_date: dateStr,
-          notes,
-          status: "assigned" as const
-        }))
+        assignments: volunteerIds.map(id => {
+          const vol = volunteerIndex.get(id);
+          const isRecommended = (recommendations?.recommended ?? []).some((v: any) => v.id === id);
+          const isFlexible = (recommendations?.flexible ?? []).some((v: any) => v.id === id);
+          return {
+            volunteer_id: id,
+            category_id: categoryId,
+            assignment_date: dateStr,
+            notes,
+            status: "assigned" as const,
+            availability_source: isRecommended
+              ? ("specific_date" as const)
+              : isFlexible
+                ? ("flexible_rule" as const)
+                : ("manual" as const),
+            flexible_rule_id: isFlexible ? (vol?.flexible_rule_id ?? null) : null,
+            is_override: !isRecommended && !isFlexible ? true : !!vol?.quota_full,
+            override_reason: !isRecommended && !isFlexible
+              ? "Asignado sin disponibilidad declarada"
+              : vol?.quota_full
+                ? "Excede el cupo de su disponibilidad flexible"
+                : null,
+          };
+        })
       }
     }),
+
     onSuccess: (data) => {
       if (data.successCount > 0) {
         toast.success(`Se asignaron ${data.successCount} voluntarios correctamente.`);
@@ -214,6 +243,44 @@ export function AssignmentModal({
                 )}
               </section>
 
+              {/* Flexible List */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                    <Repeat className="h-4 w-4 text-cyan" />
+                    Disponibilidad flexible compatible ({recommendations?.flexible?.length || 0})
+                  </h3>
+                </div>
+
+                {(recommendations?.flexible?.length ?? 0) === 0 ? (
+                  <div className="p-4 bg-slate-50 rounded-lg border border-dashed border-slate-200 text-center">
+                    <p className="text-xs text-slate-500">Nadie con disponibilidad flexible coincide con esta fecha.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {recommendations?.flexible?.map((vol: any) => (
+                      <VolunteerCard
+                        key={vol.id}
+                        volunteer={vol}
+                        isSelected={selectedVolunteers.includes(vol.id)}
+                        onToggle={() => {
+                          if (!selectedVolunteers.includes(vol.id) && vol.quota_full) {
+                            if (confirm(`${vol.full_name} ya cubrió su cupo (${vol.quota_used}/${vol.quota_max}) en este período. ¿Asignarlo igual?`)) {
+                              toggleVolunteer(vol.id);
+                            }
+                          } else {
+                            toggleVolunteer(vol.id);
+                          }
+                        }}
+                        isFlexible
+                        date={dateStr}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+
+
               {/* Others List */}
               <section>
                 <button 
@@ -284,14 +351,17 @@ function VolunteerCard({
   isSelected, 
   onToggle, 
   isOthers = false,
+  isFlexible = false,
   date 
 }: { 
   volunteer: any; 
   isSelected: boolean; 
   onToggle: () => void; 
   isOthers?: boolean;
+  isFlexible?: boolean;
   date: string;
 }) {
+
   return (
     <div 
       className={`group flex items-center gap-4 p-3 rounded-xl border transition-all cursor-pointer ${
@@ -337,12 +407,24 @@ function VolunteerCard({
           <Badge variant="outline" className="text-[9px] uppercase font-black text-red-500 border-red-200 bg-red-50">
             No disponible
           </Badge>
+        ) : isFlexible ? (
+          <>
+            <Badge variant="outline" className="text-[9px] uppercase font-black text-cyan border-cyan/30 bg-cyan/5">
+              Flexible
+            </Badge>
+            {volunteer.quota_max != null && (
+              <span className={`text-[9px] font-black uppercase ${volunteer.quota_full ? 'text-amber-600' : 'text-slate-400'}`}>
+                Cupo {volunteer.quota_used}/{volunteer.quota_max}
+              </span>
+            )}
+          </>
         ) : (
           <Badge variant="outline" className="text-[9px] uppercase font-black text-success border-success/30 bg-success/5">
             Disponible {format(parseISO(date), 'dd/MM')}
           </Badge>
         )}
       </div>
+
     </div>
   );
 }
