@@ -107,7 +107,19 @@ function AdminDashboard() {
             description,
             work_categories (id, name, color, icon)
           ),
-          availability!inner (available_date, is_available),
+          availability${useInnerAvailability ? "!inner" : ""} (available_date, is_available),
+          flexible_availability (
+            id,
+            frequency_type,
+            max_occurrences,
+            start_date,
+            end_date,
+            preferred_days,
+            is_any_day,
+            preferred_shift,
+            notes,
+            is_active
+          ),
           accommodation_requests (
             id,
             needs_accommodation,
