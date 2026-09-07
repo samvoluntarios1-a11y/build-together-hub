@@ -93,8 +93,9 @@ function AdminDashboard() {
   
   // Fetch volunteers with skills and availability
   const { data: volunteersData, isLoading } = useQuery({
-    queryKey: ["volunteers", page, searchTerm, localityFilter, categoryFilter, dateFilterMode, selectedDate, dateRange],
+    queryKey: ["volunteers", page, searchTerm, localityFilter, categoryFilter, dateFilterMode, selectedDate, dateRange, availTypeFilter],
     queryFn: async () => {
+      const useInnerAvailability = dateFilterMode !== "none" && availTypeFilter !== "flexible";
       let query = supabase
         .from("profiles")
         .select(`
