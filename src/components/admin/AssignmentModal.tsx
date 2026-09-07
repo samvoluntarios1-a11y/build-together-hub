@@ -351,14 +351,17 @@ function VolunteerCard({
   isSelected, 
   onToggle, 
   isOthers = false,
+  isFlexible = false,
   date 
 }: { 
   volunteer: any; 
   isSelected: boolean; 
   onToggle: () => void; 
   isOthers?: boolean;
+  isFlexible?: boolean;
   date: string;
 }) {
+
   return (
     <div 
       className={`group flex items-center gap-4 p-3 rounded-xl border transition-all cursor-pointer ${
