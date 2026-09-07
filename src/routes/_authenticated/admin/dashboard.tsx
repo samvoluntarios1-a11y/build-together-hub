@@ -62,6 +62,7 @@ function AdminDashboard() {
   
   // New date filters
   const [dateFilterMode, setDateFilterMode] = useState<"none" | "day" | "range" | "week" | "month">("none");
+  const [availTypeFilter, setAvailTypeFilter] = useState<"all" | "dates" | "flexible">("all");
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [dateRange, setDateRange] = useState<{from: string, to: string}>({
     from: format(new Date(), "yyyy-MM-dd"),
