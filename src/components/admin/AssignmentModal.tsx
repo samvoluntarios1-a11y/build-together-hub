@@ -67,18 +67,46 @@ export function AssignmentModal({
     enabled: !!categoryId && isOpen
   });
 
+  const volunteerIndex = useMemo(() => {
+    const map = new Map<string, any>();
+    [
+      ...(recommendations?.recommended ?? []),
+      ...(recommendations?.flexible ?? []),
+      ...(recommendations?.others ?? []),
+    ].forEach((v: any) => map.set(v.id, v));
+    return map;
+  }, [recommendations]);
+
   const mutation = useMutation({
     mutationFn: (volunteerIds: string[]) => createBulkAssignments({
       data: {
-        assignments: volunteerIds.map(id => ({
-          volunteer_id: id,
-          category_id: categoryId,
-          assignment_date: dateStr,
-          notes,
-          status: "assigned" as const
-        }))
+        assignments: volunteerIds.map(id => {
+          const vol = volunteerIndex.get(id);
+          const isRecommended = (recommendations?.recommended ?? []).some((v: any) => v.id === id);
+          const isFlexible = (recommendations?.flexible ?? []).some((v: any) => v.id === id);
+          return {
+            volunteer_id: id,
+            category_id: categoryId,
+            assignment_date: dateStr,
+            notes,
+            status: "assigned" as const,
+            availability_source: isRecommended
+              ? ("specific_date" as const)
+              : isFlexible
+                ? ("flexible_rule" as const)
+                : ("manual" as const),
+            flexible_rule_id: isFlexible ? (vol?.flexible_rule_id ?? null) : null,
+            is_override: !isRecommended && !isFlexible ? true : !!vol?.quota_full,
+            override_reason: !isRecommended && !isFlexible
+              ? "Asignado sin disponibilidad declarada"
+              : vol?.quota_full
+                ? "Excede el cupo de su disponibilidad flexible"
+                : null,
+          };
+        })
       }
     }),
+
     onSuccess: (data) => {
       if (data.successCount > 0) {
         toast.success(`Se asignaron ${data.successCount} voluntarios correctamente.`);
