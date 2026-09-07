@@ -242,6 +242,44 @@ export function AssignmentModal({
                 )}
               </section>
 
+              {/* Flexible List */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                    <Repeat className="h-4 w-4 text-cyan" />
+                    Disponibilidad flexible compatible ({recommendations?.flexible?.length || 0})
+                  </h3>
+                </div>
+
+                {(recommendations?.flexible?.length ?? 0) === 0 ? (
+                  <div className="p-4 bg-slate-50 rounded-lg border border-dashed border-slate-200 text-center">
+                    <p className="text-xs text-slate-500">Nadie con disponibilidad flexible coincide con esta fecha.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {recommendations?.flexible?.map((vol: any) => (
+                      <VolunteerCard
+                        key={vol.id}
+                        volunteer={vol}
+                        isSelected={selectedVolunteers.includes(vol.id)}
+                        onToggle={() => {
+                          if (!selectedVolunteers.includes(vol.id) && vol.quota_full) {
+                            if (confirm(`${vol.full_name} ya cubrió su cupo (${vol.quota_used}/${vol.quota_max}) en este período. ¿Asignarlo igual?`)) {
+                              toggleVolunteer(vol.id);
+                            }
+                          } else {
+                            toggleVolunteer(vol.id);
+                          }
+                        }}
+                        isFlexible
+                        date={dateStr}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+
+
               {/* Others List */}
               <section>
                 <button 
