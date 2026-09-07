@@ -216,8 +216,13 @@ export const createBulkAssignments = createServerFn({ method: "POST" })
             category_id: assignment.category_id,
             assignment_date: assignment.assignment_date,
             notes: assignment.notes ?? null,
-            status: assignment.status
+            status: assignment.status,
+            availability_source: assignment.availability_source ?? "specific_date",
+            flexible_rule_id: assignment.flexible_rule_id ?? null,
+            is_override: assignment.is_override ?? false,
+            override_reason: assignment.override_reason ?? null
           });
+
 
         if (error) throw error;
         results.successCount++;
