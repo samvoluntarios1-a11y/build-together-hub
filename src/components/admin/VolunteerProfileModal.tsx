@@ -260,6 +260,35 @@ export function VolunteerProfileModal({ volunteer, isOpen, onClose, onDelete }: 
                 </div>
               </section>
 
+              {/* Flexible availability */}
+              <section>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
+                  <Repeat className="h-4 w-4" /> Disponibilidad Flexible
+                </h3>
+                {activeFlexible.length === 0 ? (
+                  <div className="card-soft p-5 bg-slate-50/50 border-slate-100">
+                    <p className="text-xs text-slate-400">Sin reglas de disponibilidad flexible.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {activeFlexible.map((rule) => (
+                      <div key={rule.id} className="card-soft p-4 border-l-4 border-l-accent">
+                        <p className="text-sm font-bold text-slate-900">{describeFlexible(rule)}</p>
+                        <p className="text-xs text-slate-500 mt-1">{describeValidity(rule)}</p>
+                        {rule.preferred_shift && (
+                          <Badge variant="outline" className="mt-2 text-[10px] font-bold uppercase">
+                            Turno: {SHIFT_LABELS[rule.preferred_shift]}
+                          </Badge>
+                        )}
+                        {rule.notes && (
+                          <p className="text-xs text-slate-600 italic mt-2">"{rule.notes}"</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
               {/* Accommodation */}
               <section>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
