@@ -20,7 +20,8 @@ import {
   Trash2
 } from "lucide-react";
 import { useState, useMemo } from "react";
-import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
+import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO, eachDayOfInterval } from "date-fns";
+import { ruleCoversDate, toFlexibleRule, describeFlexible } from "@/lib/flexible";
 import { es } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryIcon } from "@/lib/icons";
