@@ -404,6 +404,7 @@ function AdminDashboard() {
               setLocalityFilter(""); 
               setCategoryFilter(""); 
               setDateFilterMode("none");
+              setAvailTypeFilter("all");
               setPage(0); 
             }}
             className="btn-outline h-10 px-4 text-xs"
