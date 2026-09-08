@@ -14,8 +14,10 @@ import {
   Info,
   List,
   LayoutGrid,
-  Trash2
+  Trash2,
+  Repeat
 } from "lucide-react";
+import { describeFlexible, describeValidity, toFlexibleRule, SHIFT_LABELS } from "@/lib/flexible";
 import { useState, useMemo } from "react";
 import { format, parseISO, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { es } from "date-fns/locale";
