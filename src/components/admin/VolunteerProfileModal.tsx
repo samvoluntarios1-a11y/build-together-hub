@@ -56,6 +56,11 @@ export function VolunteerProfileModal({ volunteer, isOpen, onClose, onDelete }: 
     return groups;
   }, [availableDates]);
 
+  const activeFlexible = useMemo(
+    () => (volunteer?.flexible_availability ?? []).filter((r) => r.is_active).map(toFlexibleRule),
+    [volunteer?.flexible_availability]
+  );
+
   if (!volunteer) return null;
 
   const accommodation = volunteer.accommodation_requests?.[0];
