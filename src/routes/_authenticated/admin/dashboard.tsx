@@ -417,6 +417,24 @@ function AdminDashboard() {
           <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
             <CalendarDays className="h-4 w-4" /> Filtrar por Disponibilidad
           </label>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tipo</span>
+            <div className="flex bg-slate-100 p-0.5 rounded-lg">
+              {[
+                { id: "all", label: "Todos" },
+                { id: "dates", label: "Fechas específicas" },
+                { id: "flexible", label: "Flexible" },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => { setAvailTypeFilter(t.id as any); setPage(0); }}
+                  className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition ${availTypeFilter === t.id ? "bg-white shadow-sm text-primary" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex bg-slate-100 p-0.5 rounded-lg">
               {[
