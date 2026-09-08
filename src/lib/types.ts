@@ -49,6 +49,19 @@ export interface AccommodationEmbed {
   special_requirements: string | null;
 }
 
+export interface FlexibleEmbed {
+  id: string;
+  frequency_type: "weekly" | "monthly" | "unlimited";
+  max_occurrences: number | null;
+  start_date: string | null;
+  end_date: string | null;
+  preferred_days: unknown;
+  is_any_day: boolean;
+  preferred_shift: "manana" | "tarde" | "completo" | null;
+  notes: string | null;
+  is_active: boolean;
+}
+
 export interface VolunteerRow {
   id: string;
   volunteer_number: string;
