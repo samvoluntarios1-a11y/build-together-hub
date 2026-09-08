@@ -559,6 +559,11 @@ function AdminDashboard() {
                           <Calendar className="h-3.5 w-3.5 text-slate-400" />
                           {v.availability?.length || 0} días
                         </span>
+                        {(v.flexible_availability ?? []).filter(r => r.is_active).map((r) => (
+                          <span key={r.id} className="text-[9px] font-bold uppercase text-accent bg-accent/10 rounded px-1 py-0.5 max-w-[170px] truncate" title={describeFlexible(toFlexibleRule(r))}>
+                            Flexible · {describeFlexible(toFlexibleRule(r))}
+                          </span>
+                        ))}
                         {dateFilterMode !== "none" && v.availability && (
                           <div className="flex flex-wrap gap-1 max-w-[150px]">
                             {v.availability.slice(0, 3).map((a, idx) => (
