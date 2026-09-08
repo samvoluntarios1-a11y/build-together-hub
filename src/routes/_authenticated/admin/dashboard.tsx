@@ -20,7 +20,8 @@ import {
   Trash2
 } from "lucide-react";
 import { useState, useMemo } from "react";
-import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
+import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO, eachDayOfInterval } from "date-fns";
+import { ruleCoversDate, toFlexibleRule, describeFlexible } from "@/lib/flexible";
 import { es } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryIcon } from "@/lib/icons";
@@ -403,6 +404,7 @@ function AdminDashboard() {
               setLocalityFilter(""); 
               setCategoryFilter(""); 
               setDateFilterMode("none");
+              setAvailTypeFilter("all");
               setPage(0); 
             }}
             className="btn-outline h-10 px-4 text-xs"
@@ -415,6 +417,24 @@ function AdminDashboard() {
           <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
             <CalendarDays className="h-4 w-4" /> Filtrar por Disponibilidad
           </label>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tipo</span>
+            <div className="flex bg-slate-100 p-0.5 rounded-lg">
+              {[
+                { id: "all", label: "Todos" },
+                { id: "dates", label: "Fechas específicas" },
+                { id: "flexible", label: "Flexible" },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => { setAvailTypeFilter(t.id as any); setPage(0); }}
+                  className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition ${availTypeFilter === t.id ? "bg-white shadow-sm text-primary" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex bg-slate-100 p-0.5 rounded-lg">
               {[
@@ -539,6 +559,11 @@ function AdminDashboard() {
                           <Calendar className="h-3.5 w-3.5 text-slate-400" />
                           {v.availability?.length || 0} días
                         </span>
+                        {(v.flexible_availability ?? []).filter(r => r.is_active).map((r) => (
+                          <span key={r.id} className="text-[9px] font-bold uppercase text-accent bg-accent/10 rounded px-1 py-0.5 max-w-[170px] truncate" title={describeFlexible(toFlexibleRule(r))}>
+                            Flexible · {describeFlexible(toFlexibleRule(r))}
+                          </span>
+                        ))}
                         {dateFilterMode !== "none" && v.availability && (
                           <div className="flex flex-wrap gap-1 max-w-[150px]">
                             {v.availability.slice(0, 3).map((a, idx) => (
