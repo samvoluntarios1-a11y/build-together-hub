@@ -59,6 +59,7 @@ export interface VolunteerRow {
   availability: { available_date: string }[];
   accommodation_requests: AccommodationEmbed[];
   calendar_assignments?: AssignmentRow[];
+  flexible_availability?: FlexibleEmbed[];
 }
 
 export interface AssignmentRow {
