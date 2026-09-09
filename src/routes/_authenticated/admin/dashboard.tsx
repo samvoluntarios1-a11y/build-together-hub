@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { 
   Users, 
   HardHat, 
@@ -31,6 +32,7 @@ import { toast } from "sonner";
 import { VolunteerProfileModal } from "@/components/admin/VolunteerProfileModal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteVolunteer } from "@/lib/volunteer.functions";
+import { getAdminVolunteers } from "@/lib/admin-volunteers.functions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,6 +77,7 @@ function AdminDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [volunteerToDelete, setVolunteerToDelete] = useState<VolunteerRow | null>(null);
   const queryClient = useQueryClient();
+  const fetchAdminVolunteers = useServerFn(getAdminVolunteers);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -94,64 +97,9 @@ function AdminDashboard() {
   });
   
   // Fetch volunteers with skills and availability
-  const { data: volunteersData, isLoading } = useQuery({
+  const { data: volunteersData, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["volunteers", page, searchTerm, localityFilter, categoryFilter, dateFilterMode, selectedDate, dateRange, availTypeFilter],
     queryFn: async () => {
-      const useInnerAvailability = dateFilterMode !== "none" && availTypeFilter !== "flexible";
-      let query = supabase
-        .from("profiles")
-        .select(`
-          *,
-          volunteer_skills (
-            id,
-            category_id,
-            skill_level,
-            years_experience,
-            description,
-            work_categories (id, name, color, icon)
-          ),
-          availability${useInnerAvailability ? "!inner" : ""} (available_date, is_available),
-          flexible_availability (
-            id,
-            frequency_type,
-            max_occurrences,
-            start_date,
-            end_date,
-            preferred_days,
-            is_any_day,
-            preferred_shift,
-            notes,
-            is_active
-          ),
-          accommodation_requests (
-            id,
-            needs_accommodation,
-            is_fulfilled,
-            locality_origin,
-            dates_needed_start,
-            dates_needed_end,
-            special_requirements
-          ),
-          calendar_assignments (
-            id,
-            assignment_date,
-            status,
-            work_categories (name, color, icon)
-          )
-        `, { count: "exact" });
-
-      if (searchTerm) {
-        query = query.ilike("full_name", `%${searchTerm}%`);
-      }
-      if (localityFilter) {
-        query = query.ilike("locality", `%${localityFilter}%`);
-      }
-      
-      // Filter by skill category
-      if (categoryFilter) {
-        query = query.eq("volunteer_skills.category_id", categoryFilter);
-      }
-
       // Ventana de fechas seleccionada (si corresponde)
       let windowFrom: string | null = null;
       let windowTo: string | null = null;
@@ -169,18 +117,16 @@ function AdminDashboard() {
         windowTo = format(endOfMonth(parseISO(selectedDate)), "yyyy-MM-dd");
       }
 
-      if (availTypeFilter !== "flexible") {
-        query = query.eq("availability.is_available", true);
-        if (windowFrom && windowTo) {
-          query = query.gte("availability.available_date", windowFrom)
-                       .lte("availability.available_date", windowTo);
-        }
-      }
-
-      const { data, error } = await query
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
+      const data = await fetchAdminVolunteers({
+        data: {
+          searchTerm,
+          localityFilter,
+          categoryFilter,
+          availabilityFrom: availTypeFilter !== "flexible" ? windowFrom : null,
+          availabilityTo: availTypeFilter !== "flexible" ? windowTo : null,
+          includeSpecificAvailability: availTypeFilter !== "flexible",
+        },
+      });
 
       let processedData = data as unknown as VolunteerRow[];
 
@@ -521,6 +467,14 @@ function AdminDashboard() {
                   <td colSpan={5} className="py-20 text-center">
                     <Clock className="mx-auto h-8 w-8 animate-spin text-slate-300" />
                     <p className="mt-2 text-sm text-slate-500">Cargando voluntarios...</p>
+                  </td>
+                </tr>
+              ) : isError ? (
+                <tr>
+                  <td colSpan={5} className="py-20 text-center">
+                    <p className="text-sm font-semibold text-red-600">No se pudo cargar el listado.</p>
+                    <p className="mx-auto mt-1 max-w-md text-xs text-slate-500">{error instanceof Error ? error.message : "Intentá nuevamente."}</p>
+                    <button onClick={() => refetch()} className="btn-outline mt-4 h-9 px-4 text-xs">Reintentar</button>
                   </td>
                 </tr>
               ) : volunteersData?.volunteers.length === 0 ? (
