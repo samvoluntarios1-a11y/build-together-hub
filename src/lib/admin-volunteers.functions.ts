@@ -38,18 +38,6 @@ export const getAdminVolunteers = createServerFn({ method: "GET" })
           work_categories (id, name, color, icon)
         ),
         availability${useInnerAvailability ? "!inner" : ""} (available_date, is_available),
-        flexible_availability (
-          id,
-          frequency_type,
-          max_occurrences,
-          start_date,
-          end_date,
-          preferred_days,
-          is_any_day,
-          preferred_shift,
-          notes,
-          is_active
-        ),
         accommodation_requests (
           id,
           needs_accommodation,
@@ -81,5 +69,39 @@ export const getAdminVolunteers = createServerFn({ method: "GET" })
     const { data: volunteers, error } = await query;
     if (error) throw new Error(`No se pudieron cargar los voluntarios: ${error.message}`);
 
-    return volunteers ?? [];
+    const volunteerIds = (volunteers ?? []).map((volunteer) => volunteer.id);
+    if (volunteerIds.length === 0) return [];
+
+    const { data: flexibleAvailability, error: flexibleError } = await supabaseAdmin
+      .from("flexible_availability")
+      .select(`
+        id,
+        volunteer_id,
+        frequency_type,
+        max_occurrences,
+        start_date,
+        end_date,
+        preferred_days,
+        is_any_day,
+        preferred_shift,
+        notes,
+        is_active
+      `)
+      .in("volunteer_id", volunteerIds);
+
+    if (flexibleError) {
+      throw new Error(`No se pudo cargar la disponibilidad flexible: ${flexibleError.message}`);
+    }
+
+    const flexibleByVolunteer = new Map<string, typeof flexibleAvailability>();
+    for (const rule of flexibleAvailability ?? []) {
+      const current = flexibleByVolunteer.get(rule.volunteer_id) ?? [];
+      current.push(rule);
+      flexibleByVolunteer.set(rule.volunteer_id, current);
+    }
+
+    return (volunteers ?? []).map((volunteer) => ({
+      ...volunteer,
+      flexible_availability: flexibleByVolunteer.get(volunteer.id) ?? [],
+    }));
   });
