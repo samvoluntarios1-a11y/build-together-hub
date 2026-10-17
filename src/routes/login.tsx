@@ -4,12 +4,18 @@ import { toast } from "sonner";
 import { Loader2, LogIn, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLogo } from "@/components/AppLogo";
+import { Button } from "@/components/ui/button";
+import { authErrorMessage } from "@/lib/auth-errors";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Voluntarios LDC" },
-      { name: "description", content: "Voluntarios LDC — Gestión de voluntarios para la construcción" },
+      { title: "Iniciar sesión — Voluntarios LDC" },
+      { name: "description", content: "Acceso de administradores y coordinadores de Voluntarios LDC." },
+      { property: "og:title", content: "Iniciar sesión — Voluntarios LDC" },
+      { property: "og:description", content: "Acceso de administradores y coordinadores de Voluntarios LDC." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -22,8 +28,9 @@ const WINDOW_MS = 60 * 60 * 1000; // 1 hora
 
 function getAttempts(): number[] {
   try {
-    const raw = JSON.parse(localStorage.getItem(ATTEMPTS_KEY) ?? "[]") as number[];
-    return raw.filter((t) => Date.now() - t < WINDOW_MS);
+    const raw: unknown = JSON.parse(localStorage.getItem(ATTEMPTS_KEY) ?? "[]");
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((t): t is number => typeof t === "number" && t <= Date.now() && Date.now() - t < WINDOW_MS);
   } catch {
     return [];
   }
@@ -31,7 +38,7 @@ function getAttempts(): number[] {
 
 function recordAttempt() {
   const attempts = [...getAttempts(), Date.now()];
-  localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(attempts));
+  try { localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(attempts)); } catch { /* Storage may be unavailable. */ }
   return attempts.length;
 }
 
@@ -41,13 +48,16 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [confirmationEmail, setConfirmationEmail] = useState("");
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (getAttempts().length >= MAX_ATTEMPTS) {
-      toast.error("Demasiados intentos", {
-        description: "Superaste los 5 intentos por hora. Probá más tarde.",
-      });
+    setErrorMessage("");
+    const attempts = getAttempts();
+    if (attempts.length >= MAX_ATTEMPTS) {
+      const minutes = Math.max(1, Math.ceil((Math.min(...attempts) + WINDOW_MS - Date.now()) / 60000));
+      setErrorMessage(`Superaste los 5 intentos por hora en este navegador. Podés volver a intentar en ${minutes} minutos o recuperar tu contraseña.`);
       return;
     }
     setLoading(true);
@@ -57,10 +67,8 @@ function LoginPage() {
         password,
       });
       if (error) {
-        recordAttempt();
-        toast.error("No se pudo iniciar sesión", {
-          description: "Verificá tu email y contraseña.",
-        });
+        if (error.code === "invalid_credentials") recordAttempt();
+        setErrorMessage(authErrorMessage(error));
         return;
       }
       // Verificar que tenga rol de staff
@@ -90,9 +98,11 @@ function LoginPage() {
         });
         return;
       }
-      localStorage.removeItem(ATTEMPTS_KEY);
+      try { localStorage.removeItem(ATTEMPTS_KEY); } catch { /* Storage may be unavailable. */ }
       toast.success("¡Bienvenido!");
-      navigate({ to: "/admin/dashboard" as any });
+      await navigate({ to: "/admin/dashboard" });
+    } catch (error) {
+      setErrorMessage(authErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -100,26 +110,30 @@ function LoginPage() {
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+    setErrorMessage("");
     if (password.length < 8) {
       toast.error("La contraseña debe tener al menos 8 caracteres");
       return;
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: { emailRedirectTo: window.location.origin + "/login" },
       });
       if (error) {
-        toast.error("No se pudo crear la cuenta", { description: error.message });
+        setErrorMessage(authErrorMessage(error));
         return;
       }
-      toast.success("Cuenta creada", {
-        description:
-          "Verificá tu email para activarla. Luego un administrador debe asignarte el rol correspondiente.",
-      });
+      // Confirmed existing addresses can return an obfuscated signup response.
+      // Do not claim a new account was created or that signup implies sign-in.
+      if (!data.session) setConfirmationEmail(email.trim());
+      else toast.success("Solicitud completada", { description: "Un administrador debe asignarte permisos para acceder al panel." });
+      setPassword("");
       setMode("login");
+    } catch (error) {
+      setErrorMessage(authErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -133,7 +147,7 @@ function LoginPage() {
             <AppLogo 
               variant="default" 
               iconClassName="h-8 w-8" 
-              textClassName="text-2xl font-extrabold tracking-tight text-white" 
+              textClassName="text-2xl font-extrabold text-primary-foreground" 
             />
           </Link>
           <p className="mt-2 text-sm text-primary-foreground/70">
@@ -145,6 +159,13 @@ function LoginPage() {
           <h1 className="text-xl font-extrabold tracking-tight">
             {mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
           </h1>
+          {confirmationEmail && (
+            <div role="status" className="mt-4 space-y-2 text-sm text-muted-foreground">
+              <p>Revisá el correo de <strong className="break-all">{confirmationEmail}</strong> y la carpeta de spam. Si es una cuenta nueva, confirmala con el enlace recibido.</p>
+              <p>Si ya tenías cuenta, iniciá sesión o recuperá tu contraseña. Para acceder al panel, un administrador debe asignarte permisos.</p>
+            </div>
+          )}
+          {errorMessage && <p role="alert" className="mt-4 text-sm text-destructive">{errorMessage}</p>}
 
           <form
             onSubmit={mode === "login" ? handleLogin : handleSignup}
@@ -181,7 +202,7 @@ function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <button type="submit" disabled={loading} className="btn-accent w-full">
+            <Button type="submit" disabled={loading} className="btn-accent w-full">
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : mode === "login" ? (
@@ -195,7 +216,7 @@ function LoginPage() {
                   Crear cuenta
                 </>
               )}
-            </button>
+            </Button>
           </form>
 
           <div className="mt-5 flex flex-col gap-2 text-center text-sm">
@@ -207,22 +228,24 @@ function LoginPage() {
                 >
                   Olvidé mi contraseña
                 </Link>
-                <button
+                <Button variant="ghost"
                   type="button"
-                  onClick={() => setMode("signup")}
-                  className="text-muted-foreground hover:text-foreground"
+                  disabled={loading}
+                  onClick={() => { setMode("signup"); setErrorMessage(""); setConfirmationEmail(""); }}
+                  className="h-auto whitespace-normal text-muted-foreground hover:text-foreground"
                 >
                   ¿Primera vez? Crear cuenta de coordinador
-                </button>
+                </Button>
               </>
             ) : (
-              <button
+              <Button variant="link"
                 type="button"
-                onClick={() => setMode("login")}
+                disabled={loading}
+                onClick={() => { setMode("login"); setErrorMessage(""); }}
                 className="font-semibold text-primary hover:underline"
               >
                 Ya tengo cuenta — iniciar sesión
-              </button>
+              </Button>
             )}
           </div>
         </div>
