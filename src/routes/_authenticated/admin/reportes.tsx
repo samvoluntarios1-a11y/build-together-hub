@@ -24,6 +24,15 @@ import { STATUS_LABELS, type AssignmentRow } from "@/lib/types";
 
 
 export const Route = createFileRoute("/_authenticated/admin/reportes")({
+  head: () => ({ meta: [
+    { title: "Reportes — Voluntarios LDC" },
+    { name: "description", content: "Reportes de colaboración y asignaciones de Voluntarios LDC." },
+    { property: "og:title", content: "Reportes — Voluntarios LDC" },
+    { property: "og:description", content: "Reportes de colaboración y asignaciones de Voluntarios LDC." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+    { name: "robots", content: "noindex" },
+  ] }),
   component: ReportesPage,
 });
 

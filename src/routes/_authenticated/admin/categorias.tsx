@@ -17,6 +17,15 @@ import { type WorkCategory } from "@/lib/types";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/categorias")({
+  head: () => ({ meta: [
+    { title: "Categorías — Voluntarios LDC" },
+    { name: "description", content: "Categorías de colaboración de Voluntarios LDC." },
+    { property: "og:title", content: "Categorías — Voluntarios LDC" },
+    { property: "og:description", content: "Categorías de colaboración de Voluntarios LDC." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+    { name: "robots", content: "noindex" },
+  ] }),
   component: CategoriasPage,
 });
 

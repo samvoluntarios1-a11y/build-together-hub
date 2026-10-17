@@ -20,7 +20,12 @@ export const Route = createFileRoute("/registro-exitoso")({
   }),
   head: () => ({
     meta: [
-      { title: "Voluntarios LDC" },
+      { title: "Comprobante — Voluntarios LDC" },
+      { name: "description", content: "Comprobante de registro o actualización de disponibilidad en Voluntarios LDC." },
+      { property: "og:title", content: "Comprobante — Voluntarios LDC" },
+      { property: "og:description", content: "Comprobante de registro o actualización de disponibilidad en Voluntarios LDC." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),

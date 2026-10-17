@@ -8,6 +8,11 @@ export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
       { title: "Nueva contraseña — Voluntarios LDC" },
+      { name: "description", content: "Establecé una nueva contraseña para tu cuenta de Voluntarios LDC." },
+      { property: "og:title", content: "Nueva contraseña — Voluntarios LDC" },
+      { property: "og:description", content: "Establecé una nueva contraseña para tu cuenta de Voluntarios LDC." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),

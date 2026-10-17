@@ -39,6 +39,15 @@ import { ExportModal } from "@/components/admin/ExportModal";
 
 
 export const Route = createFileRoute("/_authenticated/admin/calendario")({
+  head: () => ({ meta: [
+    { title: "Calendario — Voluntarios LDC" },
+    { name: "description", content: "Calendario de asignaciones de Voluntarios LDC." },
+    { property: "og:title", content: "Calendario — Voluntarios LDC" },
+    { property: "og:description", content: "Calendario de asignaciones de Voluntarios LDC." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+    { name: "robots", content: "noindex" },
+  ] }),
   validateSearch: (search: Record<string, unknown>) => ({
     volunteer: typeof search["volunteer"] === "string" ? search["volunteer"] : undefined,
   }),

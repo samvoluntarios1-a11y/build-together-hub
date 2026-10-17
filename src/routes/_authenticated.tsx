@@ -2,10 +2,12 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
+  // The browser owns the persisted session; SSR cannot read localStorage.
+  ssr: false,
   beforeLoad: async ({ location }) => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (!session) {
+    if (userError || !user) {
       throw redirect({
         to: "/login",
         search: {
@@ -18,7 +20,7 @@ export const Route = createFileRoute("/_authenticated")({
     const { data: roles, error: rolesError } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", session.user.id);
+      .eq("user_id", user.id);
       
     if (rolesError) {
       console.error("Error fetching roles:", rolesError);
@@ -36,7 +38,8 @@ export const Route = createFileRoute("/_authenticated")({
       });
     }
 
-    return { session, user: session.user };
+    const { data: { session } } = await supabase.auth.getSession();
+    return { session, user };
   },
   component: () => <Outlet />,
 });

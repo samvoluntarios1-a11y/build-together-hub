@@ -47,15 +47,15 @@ import {
 export const Route = createFileRoute("/register")({
   head: () => ({
     meta: [
-      { title: "Voluntarios LDC" },
+      { title: "Registro de voluntarios — Voluntarios LDC" },
       {
         name: "description",
-        content: "Voluntarios LDC — Gestión de voluntarios para la construcción",
+        content: "Registrá tus habilidades y disponibilidad para colaborar con Voluntarios LDC.",
       },
-      { property: "og:title", content: "Voluntarios LDC" },
+      { property: "og:title", content: "Registro de voluntarios — Voluntarios LDC" },
       {
         property: "og:description",
-        content: "Voluntarios LDC — Gestión de voluntarios para la construcción",
+        content: "Registrá tus habilidades y disponibilidad para colaborar con Voluntarios LDC.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
