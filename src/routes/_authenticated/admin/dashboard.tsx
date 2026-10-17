@@ -52,6 +52,15 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/dashboard")({
+  head: () => ({ meta: [
+    { title: "Panel de voluntarios — Voluntarios LDC" },
+    { name: "description", content: "Gestión de voluntarios y disponibilidad de Voluntarios LDC." },
+    { property: "og:title", content: "Panel de voluntarios — Voluntarios LDC" },
+    { property: "og:description", content: "Gestión de voluntarios y disponibilidad de Voluntarios LDC." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+    { name: "robots", content: "noindex" },
+  ] }),
   component: AdminDashboard,
 });
 

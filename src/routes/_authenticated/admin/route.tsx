@@ -14,6 +14,15 @@ import { toast } from "sonner";
 import { AppLogo } from "@/components/AppLogo";
 
 export const Route = createFileRoute("/_authenticated/admin")({
+  head: () => ({ meta: [
+    { title: "Administración — Voluntarios LDC" },
+    { name: "description", content: "Administración de Voluntarios LDC." },
+    { property: "og:title", content: "Administración — Voluntarios LDC" },
+    { property: "og:description", content: "Administración de Voluntarios LDC." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+    { name: "robots", content: "noindex" },
+  ] }),
   component: AdminLayout,
 });
 
