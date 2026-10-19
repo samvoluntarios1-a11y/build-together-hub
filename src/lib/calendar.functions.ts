@@ -1,12 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { type AssignmentStatus, type SkillLevel } from "./types";
-import {
-  ruleCoversDate,
-  quotaWindow,
-  toFlexibleRule,
-  type FlexibleRule,
-} from "./flexible";
+import { toFlexibleRule } from "./flexible";
+import { classifyRecommendations } from "./assignment-recommendations";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const assignmentSchema = z.object({
   volunteer_id: z.string().uuid(),
@@ -39,8 +36,12 @@ const updateAssignmentSchema = z.object({
 });
 
 export const getAssignmentRecommendations = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data) => searchRecommendationSchema.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { data: staff, error: staffError } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
+    if (staffError) throw staffError;
+    if (!staff) throw new Error("No tenés permisos para consultar recomendaciones");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { date, categoryId, searchTerm } = data;
 
@@ -63,24 +64,13 @@ export const getAssignmentRecommendations = createServerFn({ method: "GET" })
           available_date,
           is_available
         ),
-        flexible_availability (
-          id,
-          frequency_type,
-          max_occurrences,
-          start_date,
-          end_date,
-          preferred_days,
-          is_any_day,
-          preferred_shift,
-          notes,
-          is_active
-        ),
         accommodation_requests (
           needs_accommodation
         ),
         calendar_assignments (
           assignment_date,
-          category_id
+          category_id,
+          status
         )
       `)
       .eq("is_active", true)
@@ -93,92 +83,24 @@ export const getAssignmentRecommendations = createServerFn({ method: "GET" })
     const { data: volunteers, error } = await query;
     if (error) throw error;
 
-    // 2. Clasificar en tres grupos
-    const recommended: any[] = [];
-    const flexible: any[] = [];
-    const others: any[] = [];
-
-    volunteers?.forEach((v: any) => {
-      const skill = v.volunteer_skills.find((s: any) => s.category_id === categoryId);
-      if (!skill) return;
-
-      const isAvailableExact = v.availability?.some(
-        (a: any) => a.available_date === date && a.is_available
-      );
-
-      const alreadyAssigned = v.calendar_assignments?.some(
-        (a: any) => a.assignment_date === date && a.category_id === categoryId
-      );
-
-      // Excluir si ya está asignado a ESTA categoría en ESTA fecha
-      if (alreadyAssigned) return;
-
-      const otherAssignment = v.calendar_assignments?.find(
-        (a: any) => a.assignment_date === date
-      );
-
-      // Regla flexible activa que cubra la fecha
-      const rules: FlexibleRule[] = (v.flexible_availability ?? [])
-        .map((r: any) => toFlexibleRule(r))
-        .filter((r: FlexibleRule) => r.is_active);
-      const rule = rules.find((r) => ruleCoversDate(r, date)) ?? null;
-
-      let quotaUsed = 0;
-      let quotaMax: number | null = null;
-      let quotaFull = false;
-      if (rule) {
-        const win = quotaWindow(rule, date);
-        if (win) {
-          quotaMax = rule.max_occurrences ?? 1;
-          quotaUsed = (v.calendar_assignments ?? []).filter(
-            (a: any) => a.assignment_date >= win.from && a.assignment_date <= win.to
-          ).length;
-          quotaFull = quotaUsed >= (quotaMax ?? 1);
-        }
-      }
-
-      const volunteerInfo = {
-        id: v.id,
-        full_name: v.full_name,
-        volunteer_number: v.volunteer_number,
-        locality: v.locality,
-        skill_level: skill.skill_level,
-        years_experience: skill.years_experience,
-        description: skill.description,
-        needs_accommodation: v.accommodation_requests?.[0]?.needs_accommodation || false,
-        other_assignment: otherAssignment ? true : false,
-        other_assignment_info: otherAssignment ? { category_id: otherAssignment.category_id } : null,
-        flexible_rule: rule,
-        flexible_rule_id: rule?.id ?? null,
-        quota_used: quotaUsed,
-        quota_max: quotaMax,
-        quota_full: quotaFull,
-      };
-
-      if (isAvailableExact) {
-        recommended.push(volunteerInfo);
-      } else if (rule) {
-        flexible.push(volunteerInfo);
-      } else {
-        others.push(volunteerInfo);
-      }
-    });
-
-    // 3. Ordenar
-    const levelWeight: Record<string, number> = { primaria: 3, secundaria: 2, basica: 1 };
-    const byLevel = (a: any, b: any) => {
-      const weightA = levelWeight[a.skill_level] || 0;
-      const weightB = levelWeight[b.skill_level] || 0;
-      if (weightA !== weightB) return weightB - weightA;
-      return b.years_experience - a.years_experience;
-    };
-    recommended.sort(byLevel);
-    flexible.sort((a, b) => {
-      if (a.quota_full !== b.quota_full) return a.quota_full ? 1 : -1;
-      return byLevel(a, b);
-    });
-
-    return { recommended, flexible, others };
+    const ids = (volunteers ?? []).map((v) => v.id);
+    if (ids.length === 0) return { recommended: [], flexible: [], others: [] };
+    // Independent read avoids requiring a cached profiles -> flexible relationship.
+    const { data: rules, error: rulesError } = await supabaseAdmin
+      .from("flexible_availability")
+      .select("*")
+      .in("volunteer_id", ids)
+      .eq("is_active", true);
+    if (rulesError) throw new Error(`No se pudo consultar la disponibilidad flexible: ${rulesError.message}`);
+    const byVolunteer = new Map<string, typeof rules>();
+    for (const rule of rules ?? []) {
+      const list = byVolunteer.get(rule.volunteer_id) ?? [];
+      list.push(rule);
+      byVolunteer.set(rule.volunteer_id, list);
+    }
+    return classifyRecommendations((volunteers ?? []).map((v) => ({
+      ...v, flexible_availability: (byVolunteer.get(v.id) ?? []).map(toFlexibleRule),
+    })), date, categoryId);
   });
 
 

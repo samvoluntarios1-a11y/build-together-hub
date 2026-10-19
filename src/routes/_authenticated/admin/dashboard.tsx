@@ -1,3 +1,4 @@
+import { currentAccommodation } from "@/lib/accommodation";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -182,7 +183,7 @@ function AdminDashboard() {
     queryKey: ["admin-stats"],
     queryFn: async () => {
       const { count: total } = await supabase.from("profiles").select("*", { count: "exact", head: true });
-      const { count: accommodation } = await supabase.from("accommodation_requests").select("*", { count: "exact", head: true }).eq("is_fulfilled", false);
+      const { count: accommodation } = await supabase.from("accommodation_requests").select("*", { count: "exact", head: true }).eq("needs_accommodation", true).eq("is_fulfilled", false);
       
       // Calculate upcoming assignments (next 30 days)
       const today = new Date().toISOString().split('T')[0];
@@ -226,7 +227,7 @@ function AdminDashboard() {
       v.locality,
       v.volunteer_skills?.map(s => s.work_categories?.name).filter(Boolean).join(", ") || "",
       v.availability?.length || 0,
-      v.accommodation_requests?.[0]?.needs_accommodation ? "Sí" : "No"
+      currentAccommodation(v.accommodation_requests)?.needs_accommodation ? "Sí" : "No"
     ]);
     downloadCSV("voluntarios.csv", headers, rows);
     toast.success("CSV exportado correctamente");
@@ -240,7 +241,7 @@ function AdminDashboard() {
       v.locality,
       v.volunteer_skills?.map(s => s.work_categories?.name).filter(Boolean).join(", ") || "",
       v.availability?.length || 0,
-      v.accommodation_requests?.[0]?.needs_accommodation ? "Sí" : "No"
+      currentAccommodation(v.accommodation_requests)?.needs_accommodation ? "Sí" : "No"
     ]);
     downloadExcel("voluntarios.xlsx", [
       {
@@ -542,7 +543,7 @@ function AdminDashboard() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      {Array.isArray(v.accommodation_requests) && v.accommodation_requests?.[0]?.needs_accommodation ? (
+                      {Array.isArray(v.accommodation_requests) && currentAccommodation(v.accommodation_requests)?.needs_accommodation ? (
                         <div className="flex items-center gap-1.5">
                           {v.accommodation_requests[0].is_fulfilled ? (
                             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-success/20 text-success">

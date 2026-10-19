@@ -1,3 +1,4 @@
+import { currentAccommodation } from "@/lib/accommodation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -63,7 +64,7 @@ export function VolunteerProfileModal({ volunteer, isOpen, onClose, onDelete }: 
 
   if (!volunteer) return null;
 
-  const accommodation = volunteer.accommodation_requests?.[0];
+  const accommodation = currentAccommodation(volunteer.accommodation_requests);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
