@@ -1,3 +1,4 @@
+import { useServerFn } from "@tanstack/react-start";
 import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,7 @@ export function AssignmentModal({
   defaultCategoryId 
 }: AssignmentModalProps) {
   const queryClient = useQueryClient();
+  const getRecommendations = useServerFn(getAssignmentRecommendations);
   const [categoryId, setCategoryId] = useState(defaultCategoryId || "");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedVolunteers, setSelectedVolunteers] = useState<string[]>([]);
@@ -56,9 +58,9 @@ export function AssignmentModal({
     if (defaultCategoryId) setCategoryId(defaultCategoryId);
   }, [defaultCategoryId]);
 
-  const { data: recommendations, isLoading } = useQuery({
+  const { data: recommendations, isLoading, isError, refetch } = useQuery({
     queryKey: ["recommendations", dateStr, categoryId, searchTerm],
-    queryFn: () => getAssignmentRecommendations({ 
+    queryFn: () => getRecommendations({ 
       data: {
         date: dateStr, 
         categoryId, 
@@ -112,6 +114,7 @@ export function AssignmentModal({
       if (data.successCount > 0) {
         toast.success(`Se asignaron ${data.successCount} voluntarios correctamente.`);
         queryClient.invalidateQueries({ queryKey: ["assignments"] });
+        queryClient.invalidateQueries({ queryKey: ["recommendations"] });
         onClose();
         resetForm();
       }
@@ -212,6 +215,11 @@ export function AssignmentModal({
             <div className="py-12 text-center text-slate-400">
               <Loader2 className="mx-auto h-8 w-8 animate-spin opacity-20 mb-2" />
               <p className="text-sm">Buscando voluntarios disponibles...</p>
+            </div>
+          ) : isError ? (
+            <div role="alert" className="py-8 text-center text-destructive">
+              <p>No pudimos consultar los voluntarios disponibles.</p>
+              <Button variant="outline" onClick={() => refetch()} className="mt-3">Reintentar</Button>
             </div>
           ) : (
             <div className="space-y-6">

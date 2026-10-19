@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { flexibleRuleSchema, normalizeFlexibleRule } from "./flexible.schema";
+import { accommodationFields, accommodationPayload } from "./accommodation";
 
 const registrationSchema = z
   .object({
@@ -16,11 +17,7 @@ const registrationSchema = z
     dates: z.array(z.string()).default([]),
     availability_mode: z.enum(["dates", "flexible"]).default("dates"),
     flexible: flexibleRuleSchema.nullable().optional(),
-    needs_accommodation: z.boolean(),
-    locality_origin: z.string().optional(),
-    dates_needed_start: z.string().optional(),
-    dates_needed_end: z.string().optional(),
-    special_requirements: z.string().optional(),
+    ...accommodationFields,
   })
   .refine(
     (d) =>
@@ -35,6 +32,9 @@ export const submitRegistration = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     try {
+      // Validate lodging and the flexible rule before any profile write.
+      accommodationPayload(data, "pending");
+      const flexibleRule = data.availability_mode === "flexible" && data.flexible ? normalizeFlexibleRule(data.flexible) : null;
       // 1. Verificar si el número de voluntario ya existe
       const { data: existing, error: checkError } = await supabaseAdmin
         .from("profiles")
@@ -81,7 +81,7 @@ export const submitRegistration = createServerFn({ method: "POST" })
 
       // 4. Insertar Disponibilidad (fechas específicas o regla flexible)
       if (data.availability_mode === "flexible" && data.flexible) {
-        const rule = normalizeFlexibleRule(data.flexible);
+        const rule = flexibleRule;
         const { error: flexError } = await supabaseAdmin
           .from("flexible_availability")
           .insert({ ...rule, volunteer_id: volunteerId });
@@ -107,14 +107,9 @@ export const submitRegistration = createServerFn({ method: "POST" })
       if (data.needs_accommodation) {
         const { error: accError } = await supabaseAdmin
           .from("accommodation_requests")
-          .insert({
-            volunteer_id: volunteerId,
-            needs_accommodation: true,
-            locality_origin: data.locality_origin?.trim() || null,
-            dates_needed_start: data.dates_needed_start || null,
-            dates_needed_end: data.dates_needed_end || null,
-            special_requirements: data.special_requirements?.trim() || null,
-          });
+          .insert(accommodationPayload(data, volunteerId))
+          .select("id, needs_accommodation, locality_origin, dates_needed_start, dates_needed_end, special_requirements")
+          .single();
         if (accError) throw accError;
       }
 

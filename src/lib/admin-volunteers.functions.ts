@@ -38,15 +38,6 @@ export const getAdminVolunteers = createServerFn({ method: "GET" })
           work_categories (id, name, color, icon)
         ),
         availability${useInnerAvailability ? "!inner" : ""} (available_date, is_available),
-        accommodation_requests (
-          id,
-          needs_accommodation,
-          is_fulfilled,
-          locality_origin,
-          dates_needed_start,
-          dates_needed_end,
-          special_requirements
-        ),
         calendar_assignments (
           id,
           assignment_date,
@@ -93,6 +84,13 @@ export const getAdminVolunteers = createServerFn({ method: "GET" })
       throw new Error(`No se pudo cargar la disponibilidad flexible: ${flexibleError.message}`);
     }
 
+    const { data: accommodationRequests, error: accommodationError } = await supabaseAdmin
+      .from("accommodation_requests")
+      .select("id, volunteer_id, needs_accommodation, is_fulfilled, locality_origin, dates_needed_start, dates_needed_end, special_requirements")
+      .in("volunteer_id", volunteerIds)
+      .order("created_at", { ascending: false });
+    if (accommodationError) throw new Error(`No se pudo cargar el alojamiento: ${accommodationError.message}`);
+
     const flexibleByVolunteer = new Map<string, typeof flexibleAvailability>();
     for (const rule of flexibleAvailability ?? []) {
       const current = flexibleByVolunteer.get(rule.volunteer_id) ?? [];
@@ -102,6 +100,7 @@ export const getAdminVolunteers = createServerFn({ method: "GET" })
 
     return (volunteers ?? []).map((volunteer) => ({
       ...volunteer,
+      accommodation_requests: (accommodationRequests ?? []).filter((request) => request.volunteer_id === volunteer.id),
       flexible_availability: flexibleByVolunteer.get(volunteer.id) ?? [],
     }));
   });
