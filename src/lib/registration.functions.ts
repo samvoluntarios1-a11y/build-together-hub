@@ -80,7 +80,7 @@ export const submitRegistration = createServerFn({ method: "POST" })
       }
 
       // 4. Insertar Disponibilidad (fechas específicas o regla flexible)
-      if (data.availability_mode === "flexible" && data.flexible) {
+      if (flexibleRule) {
         const rule = flexibleRule;
         const { error: flexError } = await supabaseAdmin
           .from("flexible_availability")
@@ -105,12 +105,13 @@ export const submitRegistration = createServerFn({ method: "POST" })
 
       // 5. Alojamiento
       if (data.needs_accommodation) {
-        const { error: accError } = await supabaseAdmin
+        const { data: savedAccommodation, error: accError } = await supabaseAdmin
           .from("accommodation_requests")
           .insert(accommodationPayload(data, volunteerId))
           .select("id, needs_accommodation, locality_origin, dates_needed_start, dates_needed_end, special_requirements")
           .single();
         if (accError) throw accError;
+        if (!savedAccommodation?.needs_accommodation) throw new Error("No se pudo confirmar el guardado del alojamiento.");
       }
 
       return { 

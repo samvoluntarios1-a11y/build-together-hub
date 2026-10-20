@@ -545,7 +545,7 @@ function AdminDashboard() {
                     <td className="px-6 py-4">
                       {Array.isArray(v.accommodation_requests) && currentAccommodation(v.accommodation_requests)?.needs_accommodation ? (
                         <div className="flex items-center gap-1.5">
-                          {v.accommodation_requests[0].is_fulfilled ? (
+                          {currentAccommodation(v.accommodation_requests)?.is_fulfilled ? (
                             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-success/20 text-success">
                               <CheckCircle2 className="h-3 w-3" />
                             </span>

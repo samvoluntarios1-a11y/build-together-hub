@@ -99,7 +99,9 @@ export const getAssignmentRecommendations = createServerFn({ method: "GET" })
       byVolunteer.set(rule.volunteer_id, list);
     }
     return classifyRecommendations((volunteers ?? []).map((v) => ({
-      ...v, flexible_availability: (byVolunteer.get(v.id) ?? []).map(toFlexibleRule),
+      ...v,
+      accommodation_requests: Array.isArray(v.accommodation_requests) ? v.accommodation_requests : v.accommodation_requests ? [v.accommodation_requests] : [],
+      flexible_availability: (byVolunteer.get(v.id) ?? []).map(toFlexibleRule),
     })), date, categoryId);
   });
 
