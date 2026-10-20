@@ -1,5 +1,6 @@
 import { ruleCoversDate, quotaWindow, toFlexibleRule, type FlexibleRule } from "./flexible";
 import { currentAccommodation } from "./accommodation";
+import { availabilityStatus } from "./availability-status";
 
 export interface RecommendationCandidate {
   id: string;
@@ -14,15 +15,17 @@ export interface RecommendationCandidate {
   calendar_assignments: { assignment_date: string; category_id: string; status: string }[];
 }
 
-export function classifyRecommendations(volunteers: RecommendationCandidate[], date: string, categoryId: string) {
+export function classifyRecommendations(volunteers: RecommendationCandidate[], date: string, categoryId: string, today?: string) {
   const entries = volunteers.flatMap((v) => {
     const skill = v.volunteer_skills.find((s) => s.category_id === categoryId);
     if (!v.is_active || !skill) return [];
     const assignments = v.calendar_assignments.filter((a) => a.status !== "cancelled");
     if (assignments.some((a) => a.assignment_date === date && a.category_id === categoryId)) return [];
-    const exact = v.availability.some((a) => a.available_date === date && a.is_available);
+    // Expired volunteers are only offered as manual (confirmed) candidates.
+    const expired = today ? availabilityStatus(v.availability, v.flexible_availability, today).expired : false;
+    const exact = !expired && v.availability.some((a) => a.available_date === date && a.is_available);
     // Quotas describe volunteer days per period, not rows/categories per day.
-    const options = v.flexible_availability.map(toFlexibleRule).filter((r) => ruleCoversDate(r, date)).map((rule) => {
+    const options = expired ? [] : v.flexible_availability.map(toFlexibleRule).filter((r) => ruleCoversDate(r, date)).map((rule) => {
       const window = quotaWindow(rule, date);
       const used = window ? new Set(assignments.filter((a) => a.assignment_date >= window.from && a.assignment_date <= window.to).map((a) => a.assignment_date)).size : 0;
       const max = window ? rule.max_occurrences ?? 1 : null;
@@ -34,6 +37,7 @@ export function classifyRecommendations(volunteers: RecommendationCandidate[], d
       group: exact ? "recommended" : option ? "flexible" : "others",
       volunteer: {
         id: v.id, full_name: v.full_name, volunteer_number: v.volunteer_number, locality: v.locality,
+        availability_expired: expired,
         skill_level: skill.skill_level, years_experience: skill.years_experience, description: skill.description,
         needs_accommodation: currentAccommodation(v.accommodation_requests)?.needs_accommodation ?? false,
         other_assignment: Boolean(conflict), other_assignment_info: conflict ? { category_id: conflict.category_id } : null,

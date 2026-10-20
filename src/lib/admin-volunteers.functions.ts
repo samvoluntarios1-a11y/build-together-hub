@@ -91,16 +91,29 @@ export const getAdminVolunteers = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false });
     if (accommodationError) throw new Error(`No se pudo cargar el alojamiento: ${accommodationError.message}`);
 
+    // Full availability history (unfiltered) so the status ignores dashboard date filters.
+    const { data: allDates, error: datesError } = await supabaseAdmin
+      .from("availability")
+      .select("volunteer_id, available_date, is_available")
+      .in("volunteer_id", volunteerIds);
+    if (datesError) throw new Error(`No se pudo calcular la disponibilidad: ${datesError.message}`);
+
     const flexibleByVolunteer = new Map<string, typeof flexibleAvailability>();
     for (const rule of flexibleAvailability ?? []) {
       const current = flexibleByVolunteer.get(rule.volunteer_id) ?? [];
       current.push(rule);
       flexibleByVolunteer.set(rule.volunteer_id, current);
     }
+    const { availabilityStatus, todayISO } = await import("./availability-status");
+    const today = todayISO();
 
-    return (volunteers ?? []).map((volunteer) => ({
-      ...volunteer,
-      accommodation_requests: (accommodationRequests ?? []).filter((request) => request.volunteer_id === volunteer.id),
-      flexible_availability: flexibleByVolunteer.get(volunteer.id) ?? [],
-    }));
+    return (volunteers ?? []).map((volunteer) => {
+      const rules = flexibleByVolunteer.get(volunteer.id) ?? [];
+      return {
+        ...volunteer,
+        accommodation_requests: (accommodationRequests ?? []).filter((request) => request.volunteer_id === volunteer.id),
+        flexible_availability: rules,
+        availability_status: availabilityStatus((allDates ?? []).filter((d) => d.volunteer_id === volunteer.id), rules, today),
+      };
+    });
   });

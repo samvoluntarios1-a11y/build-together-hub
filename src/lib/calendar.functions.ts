@@ -3,6 +3,7 @@ import { z } from "zod";
 import { type AssignmentStatus, type SkillLevel } from "./types";
 import { toFlexibleRule } from "./flexible";
 import { classifyRecommendations } from "./assignment-recommendations";
+import { todayISO } from "./availability-status";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const assignmentSchema = z.object({
@@ -89,8 +90,7 @@ export const getAssignmentRecommendations = createServerFn({ method: "GET" })
     const { data: rules, error: rulesError } = await supabaseAdmin
       .from("flexible_availability")
       .select("*")
-      .in("volunteer_id", ids)
-      .eq("is_active", true);
+      .in("volunteer_id", ids);
     if (rulesError) throw new Error(`No se pudo consultar la disponibilidad flexible: ${rulesError.message}`);
     const byVolunteer = new Map<string, typeof rules>();
     for (const rule of rules ?? []) {
@@ -102,7 +102,7 @@ export const getAssignmentRecommendations = createServerFn({ method: "GET" })
       ...v,
       accommodation_requests: Array.isArray(v.accommodation_requests) ? v.accommodation_requests : v.accommodation_requests ? [v.accommodation_requests] : [],
       flexible_availability: (byVolunteer.get(v.id) ?? []).map(toFlexibleRule),
-    })), date, categoryId);
+    })), date, categoryId, todayISO());
   });
 
 
