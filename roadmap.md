@@ -5,6 +5,7 @@
 - [x] Apply the required package security update and check preview health.
 - [x] Check the named account and recovery email response: no account matches the requested address and no recent email events appear.
 - [ ] Resolve recovery for the requested address — waiting for the user to confirm the original account email or request a new account.
-- [ ] Correct accommodation registration and dashboard readback without schema changes.
-- [ ] Correct flexible calendar recommendations and quota evaluation without schema or RLS changes.
-- [ ] Test both flows and report changed files and reproduction steps.
+- [x] Correct accommodation registration and dashboard readback without schema changes.
+- [x] Correct flexible calendar recommendations and quota evaluation without schema or RLS changes.
+- [x] Run regression tests and verify authenticated dashboard/calendar reads; report changed files and reproduction steps.
+- [ ] Verify persisted accommodation and a populated flexible recommendation end-to-end — connected database has no accommodation requests or flexible rules; preserving its data prohibits inserting test rows without permission.
